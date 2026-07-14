@@ -8,11 +8,10 @@ import {
   AIAssistantWidget 
 } from '@/components/admin/AdminComponents';
 import { ProcessSteps } from '@/components/admin/ProcessSteps';
-import { HistoryList } from '@/components/admin/HistoryList';
 import { VehicleDetails } from '@/components/admin/VehicleDetails';
 import { useState, useEffect } from 'react';
 import { playNotification } from "@/lib/audio";
-import { User, Clock, ShieldCheck, Camera, Car, Hash, Key } from 'lucide-react';
+import { User, Clock, ShieldCheck, Camera, Car, Key } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { data, updateCliente } = useDB();
@@ -20,7 +19,7 @@ export default function AdminDashboard() {
   const [clienteId, setClienteId] = useState<string>("");
   const [feedback, setFeedback] = useState<string | null>(null);
   
-  // O cliente é encontrado no array de clientes vindo do hook useDB
+  // Garantimos que o cliente exista com uma verificação dupla
   const cliente = data?.clientes?.find((c: any) => c.id === clienteId);
 
   useEffect(() => {
@@ -29,7 +28,6 @@ export default function AdminDashboard() {
     }
   }, [data, clienteId]);
 
-  // Esta função agora envia o objeto completo, mantendo a integridade dos dados no Supabase
   const handleUpdate = async (updates: any) => {
     if (cliente) {
       const dadosCompletos = { ...cliente, ...updates };
@@ -40,7 +38,14 @@ export default function AdminDashboard() {
     }
   };
 
-  if (!cliente) return <div className="p-8 text-white min-h-screen bg-[#050505]">Carregando painel administrativo...</div>;
+  // Loading State blindado para evitar o erro #460
+  if (!data?.clientes || data.clientes.length === 0) {
+    return <div className="p-8 text-white min-h-screen bg-[#050505]">Carregando sistema e validando dados...</div>;
+  }
+
+  if (!cliente) {
+    return <div className="p-8 text-white min-h-screen bg-[#050505]">Selecione um cliente para começar.</div>;
+  }
 
   return (
     <div className="p-8 min-h-screen bg-[#050505] text-white">
@@ -58,8 +63,8 @@ export default function AdminDashboard() {
           value={clienteId} 
           onChange={(e) => setClienteId(e.target.value)}
         >
-          {data?.clientes?.map((c: any) => (
-            <option key={c.id} value={c.id}>{c.nome} - {c.veiculo}</option>
+          {data.clientes.map((c: any) => (
+            <option key={c.id} value={c.id}>{c.nome || "Cliente"} - {c.veiculo || "Sem veículo"}</option>
           ))}
         </select>
       </div>
@@ -70,7 +75,7 @@ export default function AdminDashboard() {
           <ShieldCheck className="text-[#ff9500]" />
           <div>
             <p className="text-[10px] text-gray-500 uppercase tracking-widest">Status</p>
-            <p className="font-bold text-sm">{cliente.status || "---"}</p>
+            <p className="font-bold text-sm">{cliente.status || "Pendente"}</p>
           </div>
         </div>
         <div className="bg-[#111] p-6 rounded-xl border border-[#222] flex items-center gap-4">
@@ -84,7 +89,6 @@ export default function AdminDashboard() {
           <Clock className="text-green-500" />
           <div>
             <p className="text-[10px] text-gray-500 uppercase tracking-widest">Revisão</p>
-            {/* Garantimos que a data de revisão seja exibida de forma segura */}
             <p className="font-bold text-sm">{cliente.dataRevisao || cliente.revisao || "---"}</p>
           </div>
         </div>
@@ -116,7 +120,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {cliente.historicoFotos.map((item: any, idx: number) => (
                   <div key={idx} className="group relative rounded-lg overflow-hidden border border-[#333] hover:border-[#ff9500] transition">
-                    <img src={item.url || ""} alt={item.descricao || "Progresso"} className="w-full h-32 object-cover" />
+                    <img src={item.url || "/placeholder.png"} alt={item.descricao || "Progresso"} className="w-full h-32 object-cover" />
                     <div className="p-2 bg-black/80">
                       <p className="text-[10px] text-white truncate">{item.descricao || "Progresso"}</p>
                     </div>
