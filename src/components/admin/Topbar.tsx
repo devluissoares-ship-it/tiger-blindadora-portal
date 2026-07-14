@@ -1,0 +1,1 @@
+export default function ComponentName() { return <div>Componente</div>; }

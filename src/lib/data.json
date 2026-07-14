@@ -1,0 +1,18 @@
+{
+  "clientes": [
+    {
+      "id": "tiger-001",
+      "nome": "Carlos Eduardo Silva",
+      "veiculo": "Toyota SW4 Diamond",
+      "status": "Blindagem das Portas",
+      "progresso": 60,
+      "revisao": "2026-12-30",
+      "foto": "https://images.unsplash.com/photo-1583121274614-386d34e62e3d?q=80&w=1000&auto=format&fit=crop",
+      "telefone": "5511999998888",
+      "historico": [
+        { "data": "08/07/2026", "titulo": "Blindagem das Portas", "descricao": "Iniciada a aplicação de manta balística." },
+        { "data": "07/07/2026", "titulo": "Proteção Estrutural", "descricao": "Finalizada a blindagem do habitáculo." }
+      ]
+    }
+  ]
+}
