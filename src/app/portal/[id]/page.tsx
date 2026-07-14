@@ -1,24 +1,34 @@
 "use client";
 
-import { useDB } from "@/hooks/useDB";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase"; // Importação direta do Supabase
 import Image from "next/image";
 import { Zap, Calendar, Send } from "lucide-react";
 import { playClick, playNotification } from "@/lib/audio";
+import { Cliente } from "@/types/cliente";
 
 export default function DashboardCliente({ params }: { params: { id: string } }) {
-  const { data } = useDB();
-  const [cliente, setCliente] = useState<any>(null);
+  const [cliente, setCliente] = useState<Cliente | null>(null);
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
   const [pergunta, setPergunta] = useState("");
 
+  // Busca o cliente diretamente do Supabase pelo ID da URL
   useEffect(() => {
-    if (data?.clientes) {
-      const found = data.clientes.find((c: any) => c.id === params.id);
-      setCliente(found || null);
-    }
-  }, [data, params.id]);
+    const fetchCliente = async () => {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (!error && data) {
+        setCliente(data);
+      }
+    };
+
+    fetchCliente();
+  }, [params.id]);
 
   const handleConsultaIA = async (duvidaCustomizada?: string) => {
     if (!cliente) return;
@@ -34,9 +44,9 @@ export default function DashboardCliente({ params }: { params: { id: string } })
           nomeCliente: cliente.nome,
           status: duvidaCustomizada ? `Dúvida: ${duvidaCustomizada}` : cliente.status,
           veiculo: cliente.veiculo,
-          nivelBlindagem: cliente.nivel_blindagem || cliente.nivelBlindagem || 'Nível III-A',
-          tipoRevisao: cliente.tipo_revisao || cliente.tipoRevisao,
-          dataRevisao: cliente.data_revisao || cliente.dataRevisao,
+          nivelBlindagem: (cliente as any).nivel_blindagem || 'Nível III-A',
+          tipoRevisao: cliente.tipoRevisao,
+          dataRevisao: cliente.dataRevisao,
           isUserAdmin: false
         }),
       });
@@ -54,8 +64,7 @@ export default function DashboardCliente({ params }: { params: { id: string } })
 
   if (!cliente) return <div className="p-8 text-center text-gray-500">Localizando projeto no sistema Tiger...</div>;
 
-  // Normalização para garantir que as fotos apareçam independentemente de como o banco entrega
-  const listaFotos = cliente.historico_fotos || cliente.historicoFotos || cliente.imagens || [];
+  const listaFotos = cliente.historicoFotos || [];
 
   return (
     <main className="min-h-screen bg-[#050505] text-white p-6 md:p-12">
@@ -72,7 +81,7 @@ export default function DashboardCliente({ params }: { params: { id: string } })
         <Image src="/logo-tiger.png" alt="Tiger" width={160} height={50} />
         <div className="text-right">
           <h1 className="text-xl font-bold text-[#ff9500]">{cliente.nome}</h1>
-          <p className="text-sm text-gray-500">{cliente.veiculo} • {cliente.nivel_blindagem || cliente.nivelBlindagem || 'Nível III-A'}</p>
+          <p className="text-sm text-gray-500">{cliente.veiculo}</p>
         </div>
       </header>
 
@@ -81,10 +90,10 @@ export default function DashboardCliente({ params }: { params: { id: string } })
           <div className="bg-[#111] p-8 rounded-3xl border border-[#222]">
             <div className="flex justify-between mb-4">
               <h2 className="text-xs font-bold uppercase tracking-widest text-[#ff9500]">Status da Blindagem</h2>
-              <span className="font-mono text-[#ff9500]">{cliente.progresso || 0}%</span>
+              <span className="font-mono text-[#ff9500]">{cliente.progresso}%</span>
             </div>
             <div className="w-full bg-black h-3 rounded-full border border-[#222] overflow-hidden">
-              <div className="h-full bg-[#ff9500] transition-all duration-1000" style={{ width: `${cliente.progresso || 0}%` }} />
+              <div className="h-full bg-[#ff9500] transition-all duration-1000" style={{ width: `${cliente.progresso}%` }} />
             </div>
             <p className="mt-4 text-2xl font-bold uppercase">{cliente.status}</p>
           </div>
@@ -92,16 +101,12 @@ export default function DashboardCliente({ params }: { params: { id: string } })
           <div className="bg-[#111] p-8 rounded-3xl border border-[#222]">
             <h2 className="text-xs font-bold mb-6 uppercase tracking-widest text-[#ff9500]">Galeria de Acompanhamento</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {listaFotos.length > 0 ? listaFotos.map((foto: any, i: number) => {
-                const url = typeof foto === 'string' ? foto : foto.url;
-                const desc = typeof foto === 'string' ? "Progresso da blindagem" : (foto.descricao || "Progresso");
-                return (
-                  <div key={i} className="bg-[#1a1a1a] p-2 rounded-xl border border-[#222]">
-                    <img src={url} className="w-full aspect-video object-cover rounded-lg" alt={`Etapa ${i}`} />
-                    <p className="text-[#ff9500] text-xs font-bold mt-3 px-1 uppercase tracking-wider">{desc}</p>
-                  </div>
-                );
-              }) : <p className="text-gray-600">Fotos serão carregadas conforme o progresso.</p>}
+              {listaFotos.length > 0 ? listaFotos.map((foto, i) => (
+                <div key={i} className="bg-[#1a1a1a] p-2 rounded-xl border border-[#222]">
+                  <img src={foto.url || ""} className="w-full aspect-video object-cover rounded-lg" alt={`Etapa ${i}`} />
+                  <p className="text-[#ff9500] text-xs font-bold mt-3 px-1 uppercase tracking-wider">{foto.titulo}</p>
+                </div>
+              )) : <p className="text-gray-600">Fotos serão carregadas conforme o progresso.</p>}
             </div>
           </div>
         </div>
@@ -145,7 +150,7 @@ export default function DashboardCliente({ params }: { params: { id: string } })
               <span className="text-xs font-bold uppercase">Próxima Revisão</span>
             </div>
             <p className="text-lg font-bold">
-              {cliente.data_revisao || cliente.dataRevisao ? new Date(cliente.data_revisao || cliente.dataRevisao).toLocaleDateString('pt-BR') : "Agendar"}
+              {cliente.dataRevisao ? new Date(cliente.dataRevisao).toLocaleDateString('pt-BR') : "Agendar"}
             </p>
           </div>
         </div>

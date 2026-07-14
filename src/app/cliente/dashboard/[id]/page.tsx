@@ -2,29 +2,38 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { supabase } from "@/lib/supabase"; // Importação direta
 import { LogOut, CalendarDays, Send } from 'lucide-react';
 import { playClick, playNotification } from "@/lib/audio";
-import { useDB } from "@/hooks/useDB";
+import { Cliente } from "@/types/cliente"; // Importação da sua interface
 
 export default function DashboardCliente() {
   const { id } = useParams();
   const router = useRouter();
-  const { data } = useDB();
-  const [cliente, setCliente] = useState<any>(null);
+  const [cliente, setCliente] = useState<Cliente | null>(null);
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
   const [pergunta, setPergunta] = useState("");
 
-  // Sincronização reativa com o banco via hook useDB
+  // Busca direta no Supabase ao carregar
   useEffect(() => {
-    if (data?.clientes) {
+    const fetchCliente = async () => {
+      if (!id) return;
       const decodedId = decodeURIComponent(id as string);
-      const encontrado = data.clientes.find((c: any) => c.id === decodedId);
-      if (encontrado) {
-        setCliente(encontrado);
+      
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('id', decodedId)
+        .single();
+
+      if (!error && data) {
+        setCliente(data);
       }
-    }
-  }, [data, id]);
+    };
+
+    fetchCliente();
+  }, [id]);
 
   const handleConsultaIA = async (perguntaCustomizada?: string) => {
     if (!cliente) return;
@@ -40,7 +49,7 @@ export default function DashboardCliente() {
           nomeCliente: cliente.nome,
           status: perguntaCustomizada ? `Dúvida: ${perguntaCustomizada}` : cliente.status,
           veiculo: cliente.veiculo,
-          nivelBlindagem: cliente.nivelBlindagem,
+          nivelBlindagem: (cliente as any).nivelBlindagem || 'Nível III-A',
           tipoRevisao: cliente.tipoRevisao,
           dataRevisao: cliente.dataRevisao,
           isUserAdmin: false
@@ -95,7 +104,7 @@ export default function DashboardCliente() {
               {(cliente.historicoFotos || []).map((foto: any, i: number) => (
                 <div key={i} className="flex flex-col gap-1">
                   <img src={foto.url} className="w-full h-32 object-cover rounded-lg border border-[#222]" alt={foto.descricao} />
-                  <p className="text-[10px] text-gray-500 uppercase truncate">{foto.descricao || "Progresso"}</p>
+                  <p className="text-[10px] text-gray-500 uppercase truncate">{foto.titulo || "Progresso"}</p>
                 </div>
               ))}
             </div>

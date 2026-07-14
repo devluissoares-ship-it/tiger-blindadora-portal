@@ -3,6 +3,7 @@ export interface Cliente {
   nome: string;
   telefone: string;
   veiculo: string; // Nome comercial (ex: Porsche Cayenne)
+  senha?: string; // Campo adicionado para autenticação do cliente
   
   // Campos do Veículo (Técnicos)
   modelo?: string;
@@ -18,6 +19,7 @@ export interface Cliente {
   // Pós-Venda
   proximaRevisao?: string; // Formato: YYYY-MM-DD
   tipoRevisao?: string;
+  dataRevisao?: string; // Incluído para manter consistência com o Dashboard
   
   // Histórico
   historicoFotos: { titulo: string; url?: string }[];
@@ -29,6 +31,7 @@ export const clientePadrao: Cliente = {
   nome: "",
   telefone: "",
   veiculo: "",
+  senha: "",
   
   // Inicialização dos campos de veículo
   modelo: "",
@@ -43,6 +46,7 @@ export const clientePadrao: Cliente = {
   // Pós-Venda
   proximaRevisao: "",
   tipoRevisao: "",
+  dataRevisao: "",
   
   // Inicialização de arrays vazios para evitar erros de undefined
   historicoFotos: [],
