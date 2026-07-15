@@ -1,54 +1,62 @@
-export interface Cliente {
-  id: string;
-  nome: string;
-  telefone: string;
-  veiculo: string; // Nome comercial (ex: Porsche Cayenne)
-  senha?: string; // Campo adicionado para autenticação do cliente
-  
-  // Campos do Veículo (Técnicos)
-  modelo?: string;
-  anoModelo?: string;
-  placa?: string;
-  chassi?: string;
-  
-  // Gestão de Processo
-  status: string;
-  progresso: number;
-  etapaAtual: number;
-  
-  // Pós-Venda
-  proximaRevisao?: string; // Formato: YYYY-MM-DD
-  tipoRevisao?: string;
-  dataRevisao?: string; // Incluído para manter consistência com o Dashboard
-  
-  // Histórico
-  historicoFotos: { titulo: string; url?: string }[];
-  historicoEventos: { data: string; titulo: string; descricao: string }[];
+export interface HistoricoFoto {
+  url: string;
+  titulo: string;
+  descricao: string;
 }
 
-export const clientePadrao: Cliente = {
+export interface HistoricoEvento {
+  data: string;
+  titulo: string;
+  descricao: string;
+}
+
+export interface Cliente {
+  // Identificação
+  id: string;
+  senha?: string | null;
+  nome: string;
+  telefone: string;
+  
+  // Veículo
+  veiculo: string;
+  modelo?: string | null;
+  ano_modelo?: string | null;
+  placa?: string | null;
+  chassi?: string | null;
+  nivel_blindagem?: string | null;
+  
+  // Processo
+  status: string;
+  progresso: number;
+  etapa_atual: number;
+  
+  // Revisão (Campos novos da sua tabela)
+  tipo_revisao?: string | null;
+  data_revisao?: string | null;
+  hora_revisao?: string | null;
+  
+  // JSONB
+  historico_fotos: HistoricoFoto[];
+  historico_eventos: HistoricoEvento[];
+}
+
+export const criarClientePadrao = (): Cliente => ({
   id: "",
+  senha: "",
   nome: "",
   telefone: "",
   veiculo: "",
-  senha: "",
-  
-  // Inicialização dos campos de veículo
   modelo: "",
-  anoModelo: "",
+  ano_modelo: "",
   placa: "",
   chassi: "",
-  
-  status: "Entrada",
+  nivel_blindagem: "III-A",
+  status: "Em análise", // Atualizado conforme padrão da sua tabela
   progresso: 0,
-  etapaAtual: 1,
-  
-  // Pós-Venda
-  proximaRevisao: "",
-  tipoRevisao: "",
-  dataRevisao: "",
-  
-  // Inicialização de arrays vazios para evitar erros de undefined
-  historicoFotos: [],
-  historicoEventos: []
-};
+  etapa_atual: 1,
+  tipo_revisao: "",
+  data_revisao: "",
+  hora_revisao: "",
+  historico_fotos: [],
+  historico_eventos: []
+});

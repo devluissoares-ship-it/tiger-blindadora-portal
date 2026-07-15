@@ -1,75 +1,72 @@
 "use server";
 
-import { supabase } from '@/lib/supabase';
-import { Cliente } from '@/types/cliente';
+import { supabase } from "@/lib/supabase";
+import { revalidatePath } from "next/cache";
+import { Cliente } from "@/types/cliente";
 
 /**
- * Cria um novo registro de cliente no Supabase
- * Removemos campos extras para evitar erro de "column does not exist"
+ * Função profissional para salvar/criar cliente.
+ * Garantimos o mapeamento explícito para evitar erros de coluna inexistente.
  */
-export const criarNovoCliente = async (novoCliente: Cliente) => {
-  // Garantimos que enviamos apenas os campos que existem na sua tabela
-  const { data, error } = await supabase
-    .from('clientes')
-    .insert([{
-      id: novoCliente.id,
-      nome: novoCliente.nome,
-      veiculo: novoCliente.veiculo,
-      telefone: novoCliente.telefone,
-      senha: novoCliente.senha,
-      status: novoCliente.status || "Entrada",
-      progresso: novoCliente.progresso || 0
-    }])
-    .select();
+export async function criarNovoCliente(data: Cliente) {
+  try {
+    // Mapeamento explícito: enviamos apenas o que o banco de dados conhece.
+    // Isso evita o erro de "column does not exist".
+    const payload = {
+      nome: data.nome,
+      telefone: data.telefone,
+      veiculo: data.veiculo,
+      senha: data.senha,
+      status: data.status,
+      progresso: Number(data.progresso),
+      etapa_atual: Number(data.etapa_atual),
+      ano_modelo: data.ano_modelo,
+      placa: data.placa,
+      chassi: data.chassi,
+      nivel_blindagem: data.nivel_blindagem,
+      tipo_revisao: data.tipo_revisao,
+      data_revisao: data.data_revisao,
+      hora_revisao: data.hora_revisao,
+      historico_fotos: data.historico_fotos || [],
+      historico_eventos: data.historico_eventos || []
+    };
 
-  if (error) {
-    console.error("Erro ao inserir no Supabase:", error);
-    throw new Error(error.message);
+    const { data: novo, error } = await supabase
+      .from("clientes")
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Erro detalhado do Supabase:", error);
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/admin/clientes");
+    
+    return { success: true, data: novo };
+  } catch (error: any) {
+    console.error("Erro na Server Action [criarNovoCliente]:", error);
+    return { success: false, error: error.message };
   }
-  return data;
-};
+}
 
 /**
- * Atualiza um cliente existente
- * Removemos o ID e campos não existentes para evitar conflitos
+ * Adicionei a função de atualização que estava faltando e gerando erro no seu AdminDashboard
  */
-export const atualizarCliente = async (id: string, dados: Cliente) => {
-  // Filtra apenas as colunas que você tem no banco
-  const dadosParaAtualizar = {
-    nome: dados.nome,
-    veiculo: dados.veiculo,
-    telefone: dados.telefone,
-    senha: dados.senha,
-    status: dados.status,
-    progresso: dados.progresso
-  };
+export async function atualizarCliente(id: string, data: Partial<Cliente>) {
+  try {
+    const { error } = await supabase
+      .from("clientes")
+      .update(data)
+      .eq("id", id);
 
-  const { data, error } = await supabase
-    .from('clientes')
-    .update(dadosParaAtualizar)
-    .eq('id', id)
-    .select();
+    if (error) throw error;
 
-  if (error) {
-    console.error("Erro ao atualizar no Supabase:", error);
-    throw new Error(error.message);
+    revalidatePath("/admin/clientes");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erro na Server Action [atualizarCliente]:", error);
+    return { success: false, error: error.message };
   }
-  return data;
-};
-
-/**
- * Busca um cliente específico pelo ID
- */
-export const getClienteById = async (id: string): Promise<Cliente | null> => {
-  const { data, error } = await supabase
-    .from('clientes')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    console.error("Erro ao buscar cliente por ID:", error);
-    return null;
-  }
-  return data as Cliente;
-};
+}

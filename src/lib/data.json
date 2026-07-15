@@ -4,14 +4,23 @@
       "id": "tiger-001",
       "nome": "Carlos Eduardo Silva",
       "veiculo": "Toyota SW4 Diamond",
-      "status": "Blindagem das Portas",
+      "modelo": "Diamond 2026",
+      "anoModelo": "2026/2026",
+      "placa": "ABC-1234",
+      "chassi": "9BWZZZ...",
+      "nivelBlindagem": "III-A",
+      "status": "Portas",
       "progresso": 60,
-      "revisao": "2026-12-30",
-      "foto": "https://images.unsplash.com/photo-1583121274614-386d34e62e3d?q=80&w=1000&auto=format&fit=crop",
+      "etapaAtual": 4,
+      "dataRevisao": "2026-12-30",
+      "horaRevisao": "10:00",
       "telefone": "5511999998888",
-      "historico": [
-        { "data": "08/07/2026", "titulo": "Blindagem das Portas", "descricao": "Iniciada a aplicação de manta balística." },
-        { "data": "07/07/2026", "titulo": "Proteção Estrutural", "descricao": "Finalizada a blindagem do habitáculo." }
+      "historicoFotos": [
+        { "descricao": "Montagem das portas", "url": "https://images.unsplash.com/photo-1583121274614-386d34e62e3d?q=80&w=1000&auto=format&fit=crop", "data": "2026-07-08" }
+      ],
+      "historicoEventos": [
+        { "data": "2026-07-08", "titulo": "Blindagem das Portas", "descricao": "Iniciada a aplicação de manta balística." },
+        { "data": "2026-07-07", "titulo": "Proteção Estrutural", "descricao": "Finalizada a blindagem do habitáculo." }
       ]
     }
   ]

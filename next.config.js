@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Isso desativa a checagem de tipos durante o build
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  // Isso desativa a checagem de erros de código (linting) durante o build
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // ATENÇÃO: Habilite estas checagens em produção para garantir 
+  // que nenhum erro de código chegue ao cliente final.
+  
+  // typescript: {
+  //   ignoreBuildErrors: false, 
+  // },
+  // eslint: {
+  //   ignoreDuringBuilds: false,
+  // },
 };
 
 module.exports = nextConfig;

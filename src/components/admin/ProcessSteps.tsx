@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { Check } from 'lucide-react';
 
 interface ProcessStepsProps {
   etapaAtual: number;
@@ -14,12 +15,12 @@ export const ProcessSteps = ({ etapaAtual, onSelect }: ProcessStepsProps) => {
   ];
   
   return (
-    <div className="bg-[#111111] p-6 rounded-xl border border-[#222] my-6 shadow-sm">
-      <h3 className="text-lg font-bold mb-6 text-white">Etapas do Processo</h3>
+    <div className="bg-[#111111] p-8 rounded-2xl border border-[#222] my-8">
+      <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-8">Linha de Produção</h3>
       
       <div className="flex justify-between relative px-2">
-        {/* Linha de conexão entre os círculos - ajustada para ficar centralizada */}
-        <div className="absolute top-4 left-0 w-full h-[2px] bg-[#222] -z-0"></div>
+        {/* Linha de fundo (conectora) */}
+        <div className="absolute top-4 left-0 w-full h-[1px] bg-[#222] z-0"></div>
         
         {etapas.map((etapa, index) => {
           const numeroEtapa = index + 1;
@@ -35,15 +36,15 @@ export const ProcessSteps = ({ etapaAtual, onSelect }: ProcessStepsProps) => {
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 group-hover:scale-110
                 ${isConcluido 
-                  ? 'bg-green-600 border-green-500 text-white' 
+                  ? 'bg-green-500/10 border-green-500 text-green-500' 
                   : isAtual 
-                    ? 'bg-[#ff9500] border-orange-400 text-black font-bold' 
-                    : 'bg-[#222] border-[#333] text-gray-500'
+                    ? 'bg-[#ff9500] border-[#ff9500] text-black font-bold shadow-[0_0_15px_rgba(255,149,0,0.5)]' 
+                    : 'bg-[#050505] border-[#222] text-gray-600'
                 }`}>
-                {isConcluido ? '✓' : numeroEtapa}
+                {isConcluido ? <Check size={14} strokeWidth={3} /> : numeroEtapa}
               </div>
-              <span className={`text-[10px] mt-2 font-medium transition-colors whitespace-nowrap ${
-                isAtual ? 'text-[#ff9500]' : 'text-gray-400 group-hover:text-white'
+              <span className={`text-[10px] mt-3 font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${
+                isAtual ? 'text-[#ff9500]' : 'text-gray-500 group-hover:text-gray-300'
               }`}>
                 {etapa}
               </span>

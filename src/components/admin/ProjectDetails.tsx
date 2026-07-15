@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Save, Loader2 } from 'lucide-react';
-import { atualizarCliente } from '@/app/actions/clienteActions';
+import { Save, Loader2, User, Car } from 'lucide-react';
 import { Cliente } from '@/types/cliente';
 
 export const ProjectDetails = ({ cliente, onSave }: { cliente: Cliente, onSave: (updates: Partial<Cliente>) => Promise<void> }) => {
@@ -12,50 +11,51 @@ export const ProjectDetails = ({ cliente, onSave }: { cliente: Cliente, onSave: 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    try {
-      // Usando a prop onSave que vem do AdminDashboardClient 
-      // Isso mantém a sincronia do estado global
-      await onSave({ nome });
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      alert("Erro ao sincronizar com o servidor.");
-    } finally {
-      setLoading(false);
-    }
+    await onSave({ nome });
+    setLoading(false);
   };
 
   return (
-    <form onSubmit={handleSave} className="bg-[#111111] p-6 rounded-xl border border-[#222]">
-      <h3 className="text-lg font-bold mb-4 text-[#ff9500]">Dados do Cliente: {cliente?.nome}</h3>
-      
-      <div className="mb-4">
-        <label className="text-xs text-gray-500 uppercase tracking-wider">Cliente</label>
-        <input 
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className="w-full bg-[#050505] border border-[#222] p-2 rounded text-white font-semibold focus:border-[#ff9500] outline-none mt-1"
-        />
+    <form onSubmit={handleSave} className="bg-[#111111] p-8 rounded-2xl border border-[#222] shadow-xl">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 bg-[#ff9500]/10 rounded-lg">
+          <User size={20} className="text-[#ff9500]" />
+        </div>
+        <h3 className="text-lg font-bold text-white uppercase tracking-tight">Dados do Projeto</h3>
       </div>
+      
+      <div className="space-y-5">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Nome do Cliente</label>
+          <input 
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            className="w-full bg-[#050505] border border-[#222] p-3 rounded-xl text-white font-medium focus:border-[#ff9500] outline-none transition mt-1"
+          />
+        </div>
 
-      <div className="mb-6">
-        <label className="text-xs text-gray-500 uppercase tracking-wider">Veículo</label>
-        <p className="text-sm text-gray-300 bg-[#050505] p-2 rounded border border-[#222] mt-1">
-          {cliente?.veiculo}
-        </p>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Veículo</label>
+          <div className="flex items-center gap-3 w-full bg-[#050505] p-3 rounded-xl border border-[#222] mt-1 text-gray-400">
+            <Car size={16} />
+            <span className="text-sm font-medium">{cliente?.veiculo}</span>
+          </div>
+        </div>
       </div>
       
-      <button 
-        type="submit" 
-        disabled={loading}
-        className="bg-[#ff9500] text-black px-4 py-2 rounded font-bold flex items-center gap-2 transition hover:bg-[#e08400] w-full justify-center disabled:opacity-50"
-      >
-        {loading ? (
-          <><Loader2 className="animate-spin" size={16}/> Salvando...</>
-        ) : (
-          <><Save size={16}/> Salvar Alterações</>
-        )}
-      </button>
+      <div className="mt-8">
+        <button 
+          type="submit" 
+          disabled={loading}
+          className="w-full bg-[#ff9500] text-black py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition hover:bg-[#e68600] active:scale-[0.98] disabled:opacity-50"
+        >
+          {loading ? (
+            <><Loader2 className="animate-spin" size={18}/> Processando...</>
+          ) : (
+            <><Save size={18}/> Salvar Alterações</>
+          )}
+        </button>
+      </div>
     </form>
   );
 };

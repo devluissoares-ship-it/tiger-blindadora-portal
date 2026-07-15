@@ -1,38 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase"; // Importação direta do Supabase
-import Image from "next/image";
-import { Zap, Calendar, Send } from "lucide-react";
-import { playClick, playNotification } from "@/lib/audio";
+import { useEffect, useState, use } from "react";
+import { supabase } from "@/lib/supabase";
+import { Send, Loader2, Info, ChevronRight, MessageSquareText } from "lucide-react";
 import { Cliente } from "@/types/cliente";
 
-export default function DashboardCliente({ params }: { params: { id: string } }) {
+export default function DashboardCliente({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
   const [pergunta, setPergunta] = useState("");
 
-  // Busca o cliente diretamente do Supabase pelo ID da URL
   useEffect(() => {
     const fetchCliente = async () => {
       const { data, error } = await supabase
         .from('clientes')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', resolvedParams.id)
         .single();
 
-      if (!error && data) {
-        setCliente(data);
-      }
+      if (!error && data) setCliente(data);
     };
-
     fetchCliente();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   const handleConsultaIA = async (duvidaCustomizada?: string) => {
     if (!cliente) return;
-    playClick();
     setLoading(true);
     setResposta("");
     
@@ -44,122 +38,96 @@ export default function DashboardCliente({ params }: { params: { id: string } })
           nomeCliente: cliente.nome,
           status: duvidaCustomizada ? `Dúvida: ${duvidaCustomizada}` : cliente.status,
           veiculo: cliente.veiculo,
-          nivelBlindagem: (cliente as any).nivel_blindagem || 'Nível III-A',
-          tipoRevisao: cliente.tipoRevisao,
-          dataRevisao: cliente.dataRevisao,
-          isUserAdmin: false
+          nivelBlindagem: cliente.nivel_blindagem || 'Nível III-A',
         }),
       });
       
       const resData = await response.json();
-      if (!response.ok) throw new Error("Erro na rede");
-      
-      playNotification();
       setResposta(resData.text || "Consulte seu consultor técnico diretamente.");
     } catch (e) {
-      setResposta("Erro ao consultar a rede Tiger Tech. Tente novamente.");
+      setResposta("Erro ao consultar a rede Tiger Tech.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  if (!cliente) return <div className="p-8 text-center text-gray-500">Localizando projeto no sistema Tiger...</div>;
-
-  const listaFotos = cliente.historicoFotos || [];
+  if (!cliente) return (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#ff9500]">
+      <Loader2 className="animate-spin" size={48} />
+    </div>
+  );
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white p-6 md:p-12">
-      <style jsx global>{`
-        @keyframes pulse-glow {
-          0%, 100% { filter: drop-shadow(0 0 5px #ff9500); transform: scale(1); }
-          50% { filter: drop-shadow(0 0 25px #ff9500); transform: scale(1.05); }
-        }
-        .tiger-tech { animation: pulse-glow 3s infinite ease-in-out; }
-      `}</style>
-
-      {/* Header */}
-      <header className="flex justify-between items-center mb-12">
-        <Image src="/logo-tiger.png" alt="Tiger" width={160} height={50} />
+    <main className="min-h-screen bg-[#050505] text-white p-4 md:p-12 font-sans max-w-7xl mx-auto">
+      <header className="flex justify-between items-center mb-8 md:mb-12">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tighter">TIGER<span className="text-[#ff9500]">.</span></h1>
+          <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Portal do Cliente</p>
+        </div>
         <div className="text-right">
-          <h1 className="text-xl font-bold text-[#ff9500]">{cliente.nome}</h1>
-          <p className="text-sm text-gray-500">{cliente.veiculo}</p>
+          <h1 className="text-sm md:text-lg font-bold text-[#ff9500]">{cliente.nome}</h1>
+          <p className="text-[10px] md:text-xs text-gray-500 uppercase">{cliente.veiculo} • {cliente.placa || "Sem Placa"}</p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 space-y-8">
-          <div className="bg-[#111] p-8 rounded-3xl border border-[#222]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Coluna Principal */}
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-[#111111] p-6 md:p-8 rounded-3xl border border-[#222]">
             <div className="flex justify-between mb-4">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-[#ff9500]">Status da Blindagem</h2>
-              <span className="font-mono text-[#ff9500]">{cliente.progresso}%</span>
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#ff9500]">Progresso da Blindagem</h2>
+              <span className="font-mono text-[#ff9500] text-sm">{cliente.progresso}%</span>
             </div>
             <div className="w-full bg-black h-3 rounded-full border border-[#222] overflow-hidden">
               <div className="h-full bg-[#ff9500] transition-all duration-1000" style={{ width: `${cliente.progresso}%` }} />
             </div>
-            <p className="mt-4 text-2xl font-bold uppercase">{cliente.status}</p>
+            <div className="mt-8 flex items-center gap-4">
+               <div className="p-3 bg-[#ff9500]/10 rounded-xl text-[#ff9500]"><ChevronRight size={24}/></div>
+               <div>
+                 <p className="text-[10px] text-gray-500 uppercase">Etapa Atual</p>
+                 <p className="text-lg md:text-xl font-bold">{cliente.status}</p>
+               </div>
+            </div>
           </div>
 
-          <div className="bg-[#111] p-8 rounded-3xl border border-[#222]">
-            <h2 className="text-xs font-bold mb-6 uppercase tracking-widest text-[#ff9500]">Galeria de Acompanhamento</h2>
+          <div className="bg-[#111111] p-6 md:p-8 rounded-3xl border border-[#222]">
+            <h2 className="text-[10px] font-bold mb-6 uppercase tracking-widest text-[#ff9500]">Galeria de Acompanhamento</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {listaFotos.length > 0 ? listaFotos.map((foto, i) => (
-                <div key={i} className="bg-[#1a1a1a] p-2 rounded-xl border border-[#222]">
-                  <img src={foto.url || ""} className="w-full aspect-video object-cover rounded-lg" alt={`Etapa ${i}`} />
-                  <p className="text-[#ff9500] text-xs font-bold mt-3 px-1 uppercase tracking-wider">{foto.titulo}</p>
+              {(cliente.historico_fotos || []).map((foto: any, i: number) => (
+                <div key={i} className="bg-black p-2 rounded-2xl border border-[#222] hover:border-[#ff9500] transition">
+                  <img src={foto.url} className="w-full aspect-video object-cover rounded-xl" alt="Foto do progresso" />
+                  <p className="text-[#ff9500] text-[10px] font-bold mt-3 px-2 uppercase truncate">{foto.titulo || "Foto do processo"}</p>
                 </div>
-              )) : <p className="text-gray-600">Fotos serão carregadas conforme o progresso.</p>}
+              ))}
             </div>
           </div>
         </div>
 
+        {/* Coluna IA e Técnica */}
         <div className="space-y-8">
-          <div className="bg-[#111] p-8 rounded-3xl border border-[#222] flex flex-col items-center text-center">
-            <div className="tiger-tech mb-8 p-1">
-              <Image src="/tigre-ia.png" alt="IA" width={180} height={180} className="rounded-full border-4 border-[#ff9500]/20" />
+          <div className="bg-[#111111] p-6 md:p-8 rounded-3xl border border-[#222]">
+            <div className="flex items-center gap-2 mb-6 font-bold text-[#ff9500]">
+              <MessageSquareText size={20}/> Consultor Técnico IA
             </div>
-            <h2 className="font-bold text-xl mb-4 text-[#ff9500]">Consultor Técnico IA</h2>
-            
-            <button 
-              onClick={() => handleConsultaIA()} 
-              className="w-full bg-[#ff9500] text-black font-bold py-4 rounded-xl hover:bg-white transition-all transform hover:scale-[1.02] mb-4"
-            >
-              {loading ? "ANALISANDO..." : "EXPLICAR ETAPA"}
+            <button onClick={() => handleConsultaIA()} className="w-full bg-[#ff9500] text-black font-bold py-4 rounded-xl hover:bg-white transition mb-4">
+              {loading ? "ANALISANDO..." : "EXPLICAR ETAPA ATUAL"}
             </button>
-
             <div className="w-full flex gap-2">
-              <input 
-                className="flex-1 bg-black border border-[#222] p-4 rounded-xl text-sm outline-none focus:border-[#ff9500]"
-                placeholder="Dúvida específica?"
-                value={pergunta}
-                onChange={(e) => setPergunta(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleConsultaIA(pergunta)}
-              />
-              <button 
-                onClick={() => handleConsultaIA(pergunta)}
-                className="bg-[#222] p-4 rounded-xl hover:bg-[#ff9500] hover:text-black transition-all"
-              >
-                <Send size={20} />
-              </button>
+              <input className="flex-1 bg-black border border-[#222] p-4 rounded-xl text-sm outline-none focus:border-[#ff9500]" placeholder="Dúvida específica?" value={pergunta} onChange={(e) => setPergunta(e.target.value)} />
+              <button onClick={() => handleConsultaIA(pergunta)} className="bg-[#222] px-4 rounded-xl hover:bg-[#ff9500] transition"><Send size={18} /></button>
             </div>
-
-            {resposta && <div className="mt-6 p-5 bg-black rounded-xl text-sm text-gray-300 border border-[#222] w-full text-left">{resposta}</div>}
+            {resposta && <div className="mt-6 p-4 bg-black rounded-xl text-xs text-gray-400 border border-[#222] leading-relaxed">{resposta}</div>}
           </div>
 
-          <div className="bg-[#111] p-6 rounded-3xl border border-[#222]">
-            <div className="flex items-center gap-2 text-[#ff9500] mb-2">
-              <Calendar size={16} />
-              <span className="text-xs font-bold uppercase">Próxima Revisão</span>
-            </div>
-            <p className="text-lg font-bold">
-              {cliente.dataRevisao ? new Date(cliente.dataRevisao).toLocaleDateString('pt-BR') : "Agendar"}
-            </p>
+          <div className="bg-[#111111] p-8 rounded-3xl border border-[#222] text-sm">
+             <div className="flex items-center gap-2 mb-4 text-[#ff9500] font-bold"><Info size={16}/> Dados Técnicos</div>
+             <div className="space-y-3 text-gray-400">
+                <p>Nível: <span className="text-white">{cliente.nivel_blindagem || "III-A"}</span></p>
+                <p>Próxima Revisão: <span className="text-white">{cliente.data_revisao ? new Date(cliente.data_revisao).toLocaleDateString('pt-BR') : "Agendar"}</span></p>
+             </div>
           </div>
         </div>
       </div>
-
-      <a href="https://wa.me/5511991343588" target="_blank" onClick={playClick} className="fixed bottom-8 right-8 bg-[#111] border border-[#ff9500] text-[#ff9500] px-6 py-4 rounded-full font-bold flex items-center gap-3 hover:bg-[#ff9500] hover:text-black transition-all shadow-[0_0_20px_rgba(255,149,0,0.4)]">
-        <Zap size={20} />
-        <span>FALAR COM EQUIPE</span>
-      </a>
     </main>
   );
 }

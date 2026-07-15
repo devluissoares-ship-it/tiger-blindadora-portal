@@ -1,26 +1,27 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { supabase } from "@/lib/supabase"; // Importa o cliente blindado
 
-// GET: Busca todos os clientes do banco SQL
+// GET: Busca todos os clientes
 export async function GET() {
-  try {
-    const { rows } = await sql`SELECT * FROM clientes`;
-    return NextResponse.json({ clientes: rows });
-  } catch (error) {
-    return NextResponse.json({ error: 'Erro ao buscar dados' }, { status: 500 });
-  }
+  const { data, error } = await supabase
+    .from('clientes')
+    .select('*');
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ clientes: data });
 }
 
-// POST: Salva um novo cliente no banco SQL
+// POST: Salva um novo cliente
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    await sql`
-      INSERT INTO clientes (id, nome, veiculo, telefone, senha, status)
-      VALUES (${body.id}, ${body.nome}, ${body.veiculo}, ${body.telefone}, ${body.senha}, ${body.status})
-    `;
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Erro ao salvar' }, { status: 500 });
+    const { data, error } = await supabase
+      .from('clientes')
+      .insert([body]);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true, data });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

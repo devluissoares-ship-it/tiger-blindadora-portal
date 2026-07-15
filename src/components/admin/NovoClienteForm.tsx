@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from 'react';
-import { criarNovoCliente } from '@/app/actions/clienteActions'; // Nossa Server Action
-import { clientePadrao } from '@/types/cliente'; // Importando a estrutura base
+import { criarNovoCliente } from '@/app/actions/clienteActions';
+import { criarClientePadrao } from '@/types/cliente';
 
 export const NovoClienteForm = ({ onClose }: { onClose: () => void }) => {
   const [nome, setNome] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [veiculo, setVeiculo] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -13,57 +14,69 @@ export const NovoClienteForm = ({ onClose }: { onClose: () => void }) => {
     e.preventDefault();
     setLoading(true);
     
-    // Gerando um ID aleatório seguindo o padrão que você já usava
-    const idSlug = `${nome.toLowerCase().replace(/\s+/g, "-")}-${Math.floor(Math.random() * 1000)}`;
+    // Gerador de ID único baseado no nome e timestamp
+    const idSlug = `${nome.toLowerCase().replace(/\s+/g, "-")}-${Date.now().toString().slice(-4)}`;
     
-    // Criando o objeto respeitando a interface Cliente
+    // Criamos o objeto baseado no padrão corrigido
     const novoCliente = {
-      ...clientePadrao, // Traz os campos vazios definidos no seu arquivo de tipos
+      ...criarClientePadrao(),
       id: idSlug,
       nome,
+      telefone,
       veiculo,
-      historicoEventos: [{ 
-        data: new Date().toLocaleDateString('pt-BR'), 
+      // Usando o nome correto da coluna no banco: historico_eventos
+      historico_eventos: [{ 
+        data: new Date().toISOString(), 
         titulo: "Entrada", 
-        descricao: "Veículo cadastrado no sistema." 
+        descricao: "Veículo cadastrado no sistema via Painel Admin." 
       }]
     };
     
     try {
-      // Chamada direta para a Server Action, sem passar pelo useDB
       await criarNovoCliente(novoCliente);
       onClose();
     } catch (error) {
-      console.error("Erro ao cadastrar:", error);
-      alert("Erro ao salvar no banco de dados!");
+      console.error("Erro ao cadastrar cliente:", error);
+      alert("Erro ao criar cadastro. Verifique a conexão.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleCadastrar} className="bg-[#111111] p-6 rounded-xl border border-[#222]">
-      <h3 className="text-lg font-bold mb-4 text-[#ff9500]">Novo Cliente</h3>
-      <input 
-        className="w-full bg-[#050505] p-2 mb-3 rounded border border-[#222] text-sm text-white" 
-        placeholder="Nome do Cliente" 
-        value={nome}
-        onChange={(e) => setNome(e.target.value)} 
-        required
-      />
-      <input 
-        className="w-full bg-[#050505] p-2 mb-4 rounded border border-[#222] text-sm text-white" 
-        placeholder="Modelo do Veículo" 
-        value={veiculo}
-        onChange={(e) => setVeiculo(e.target.value)} 
-        required
-      />
+    <form onSubmit={handleCadastrar} className="w-full max-w-md bg-[#111111] p-8 rounded-2xl border border-[#222] shadow-2xl">
+      <h3 className="text-xl font-bold mb-6 text-white uppercase tracking-wider">Novo Projeto</h3>
+      
+      <div className="space-y-4">
+        <input 
+          className="w-full bg-[#050505] p-4 rounded-xl border border-[#222] text-white focus:border-[#ff9500] outline-none transition-all placeholder:text-[#444]" 
+          placeholder="Nome do Cliente" 
+          value={nome}
+          onChange={(e) => setNome(e.target.value)} 
+          required
+        />
+        <input 
+          className="w-full bg-[#050505] p-4 rounded-xl border border-[#222] text-white focus:border-[#ff9500] outline-none transition-all placeholder:text-[#444]" 
+          placeholder="Telefone (WhatsApp)" 
+          value={telefone}
+          onChange={(e) => setTelefone(e.target.value)} 
+          required
+        />
+        <input 
+          className="w-full bg-[#050505] p-4 rounded-xl border border-[#222] text-white focus:border-[#ff9500] outline-none transition-all placeholder:text-[#444]" 
+          placeholder="Modelo do Veículo" 
+          value={veiculo}
+          onChange={(e) => setVeiculo(e.target.value)} 
+          required
+        />
+      </div>
+
       <button 
         type="submit" 
         disabled={loading}
-        className="w-full bg-[#ff9500] text-black font-bold p-2 rounded hover:bg-white transition-all disabled:opacity-50"
+        className="w-full mt-8 bg-[#ff9500] text-black font-bold p-4 rounded-xl hover:bg-white transition-all disabled:opacity-50"
       >
-        {loading ? "Salvando..." : "Cadastrar Projeto"}
+        {loading ? "Processando..." : "Criar Cadastro"}
       </button>
     </form>
   );

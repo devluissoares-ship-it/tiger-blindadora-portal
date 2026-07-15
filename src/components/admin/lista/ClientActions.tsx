@@ -5,48 +5,51 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
-interface ClientActionsProps {
-  id: string;
-}
-
 export const ClientActions = ({ id }: { id: string }) => {
   const router = useRouter();
 
+  // Função para disparar sons modernos e leves
+  const playSound = (audioFile: string) => {
+    const audio = new Audio(audioFile);
+    audio.play().catch(() => console.warn("Erro ao reproduzir som"));
+  };
+
   const handleDelete = async () => {
-    if (confirm("Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.")) {
-      // Deleta direto no Supabase
-      const { error } = await supabase
-        .from('clientes')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        console.error("Erro ao excluir:", error);
-        alert("Erro ao excluir: " + error.message);
-      } else {
-        // router.refresh() é suficiente para Server Components
-        router.refresh();
-      }
+    if (!confirm("Tem certeza que deseja excluir este projeto?")) return;
+
+    // Som de clique ao iniciar ação
+    playSound('/clickbuton.mp3');
+
+    const { error } = await supabase.from('clientes').delete().eq('id', id);
+
+    if (error) {
+      // Som de erro
+      playSound('/notification.mp3');
+      alert("Erro ao excluir: " + error.message);
+    } else {
+      // Som de sucesso
+      playSound('/click.mp3');
+      router.refresh();
     }
   };
 
   return (
-    <div className="flex gap-2">
-      {/* CORRIGIDO: O caminho agora aponta para a pasta correta /admin/clientes/... */}
+    <div className="flex items-center gap-1">
       <Link 
         href={`/admin/clientes/${id}/editar`} 
-        className="p-2 hover:bg-[#222] rounded-lg transition border border-transparent hover:border-[#333]"
-        title="Editar"
+        onClick={() => playSound('/clickbuton.mp3')}
+        className="p-2 text-gray-500 hover:text-white hover:bg-[#1a1a1a] rounded-lg transition-all border border-transparent hover:border-[#333]"
+        title="Editar Projeto"
       >
-        <Edit2 size={18} className="text-gray-400"/>
+        <Edit2 size={16}/>
       </Link>
       
       <button 
         onClick={handleDelete}
-        className="p-2 hover:bg-red-900/20 rounded-lg transition border border-transparent hover:border-red-900/50"
-        title="Excluir"
+        className="p-2 text-red-500/70 hover:text-red-500 hover:bg-red-900/10 rounded-lg transition-all border border-transparent hover:border-red-900/30"
+        title="Excluir Projeto"
       >
-        <Trash2 size={18} className="text-red-500"/>
+        <Trash2 size={16}/>
       </button>
     </div>
   );

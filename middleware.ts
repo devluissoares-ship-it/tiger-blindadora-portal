@@ -3,15 +3,18 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const isAdminLoggedIn = request.cookies.get('admin_session');
-  const isLoginPage = request.nextUrl.pathname === '/login';
+  const { pathname } = request.nextUrl;
 
-  // Se o admin não está logado e tenta acessar o admin, manda pro login
-  if (!isAdminLoggedIn && request.nextUrl.pathname.startsWith('/admin')) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // 1. Proteção: Redireciona para o login se não houver sessão ativa
+  if (pathname.startsWith('/admin') && !isAdminLoggedIn) {
+    const loginUrl = new URL('/login', request.url);
+    // Opcional: Adicionar um parâmetro 'from' para redirecionar de volta após o login
+    loginUrl.searchParams.set('from', pathname); 
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Se o admin já está logado e tenta acessar o login, manda pro dashboard
-  if (isAdminLoggedIn && isLoginPage) {
+  // 2. Conveniência: Redireciona para o dashboard se já logado
+  if (pathname === '/login' && isAdminLoggedIn) {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url));
   }
 
@@ -19,5 +22,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // matcher otimizado para evitar processamento desnecessário
   matcher: ['/admin/:path*', '/login'],
 };
