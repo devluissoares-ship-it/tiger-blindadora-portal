@@ -1,133 +1,106 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { supabase } from "@/lib/supabase";
-import { Send, Loader2, Info, ChevronRight, MessageSquareText } from "lucide-react";
-import { Cliente } from "@/types/cliente";
+import { useState } from 'react';
+import { Send, MessageSquare, Phone, Loader2, Sparkles } from 'lucide-react';
 
-export default function DashboardCliente({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const [cliente, setCliente] = useState<Cliente | null>(null);
+export const ConsultorIA = ({ clienteNome, dadosCliente }: { clienteNome: string, dadosCliente: any }) => {
+  const [mensagem, setMensagem] = useState("");
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
-  const [pergunta, setPergunta] = useState("");
 
-  useEffect(() => {
-    const fetchCliente = async () => {
-      const { data, error } = await supabase
-        .from('clientes')
-        .select('*')
-        .eq('id', resolvedParams.id)
-        .single();
+  // Proteção: Garante que o som só toque no navegador
+  const playClick = () => {
+    if (typeof window !== "undefined") {
+      new Audio('/clickbuton.mp3').play().catch(() => {});
+    }
+  };
 
-      if (!error && data) setCliente(data);
-    };
-    fetchCliente();
-  }, [resolvedParams.id]);
-
-  const handleConsultaIA = async (duvidaCustomizada?: string) => {
-    if (!cliente) return;
+  const enviarParaIA = async (texto: string) => {
+    if (!texto.trim()) return;
+    
+    playClick();
     setLoading(true);
     setResposta("");
-    
+
     try {
-      const response = await fetch('/api/chat-status', {
+      const response = await fetch('/api/chat/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nomeCliente: cliente.nome,
-          status: duvidaCustomizada ? `Dúvida: ${duvidaCustomizada}` : cliente.status,
-          veiculo: cliente.veiculo,
-          nivelBlindagem: cliente.nivel_blindagem || 'Nível III-A',
-        }),
+          pergunta: texto,
+          nomeCliente: clienteNome,
+          // Uso de encadeamento opcional para evitar erros se dadosCliente for null
+          veiculo: dadosCliente?.veiculo || "Não informado",
+          status: dadosCliente?.status || "Em processamento",
+          nivelBlindagem: dadosCliente?.nivel_blindagem || "Não informado"
+        })
       });
       
-      const resData = await response.json();
-      setResposta(resData.text || "Consulte seu consultor técnico diretamente.");
-    } catch (e) {
-      setResposta("Erro ao consultar a rede Tiger Tech.");
+      const data = await response.json();
+      setResposta(data.text || "O assistente está processando, tente novamente em breve.");
+    } catch (err) {
+      setResposta("Sistema temporariamente indisponível. Nossa equipe está atenta!");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!cliente) return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#ff9500]">
-      <Loader2 className="animate-spin" size={48} />
-    </div>
-  );
-
   return (
-    <main className="min-h-screen bg-[#050505] text-white p-4 md:p-12 font-sans max-w-7xl mx-auto">
-      <header className="flex justify-between items-center mb-8 md:mb-12">
+    <div className="bg-[#0a0a0a] p-8 rounded-[2rem] border border-[#222] shadow-2xl w-full max-w-md mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="bg-[#111] p-3 rounded-2xl border border-[#222]">
+          <MessageSquare className="text-orange-500" size={24} />
+        </div>
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tighter">TIGER<span className="text-[#ff9500]">.</span></h1>
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Portal do Cliente</p>
-        </div>
-        <div className="text-right">
-          <h1 className="text-sm md:text-lg font-bold text-[#ff9500]">{cliente.nome}</h1>
-          <p className="text-[10px] md:text-xs text-gray-500 uppercase">{cliente.veiculo} • {cliente.placa || "Sem Placa"}</p>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Coluna Principal */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-[#111111] p-6 md:p-8 rounded-3xl border border-[#222]">
-            <div className="flex justify-between mb-4">
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#ff9500]">Progresso da Blindagem</h2>
-              <span className="font-mono text-[#ff9500] text-sm">{cliente.progresso}%</span>
-            </div>
-            <div className="w-full bg-black h-3 rounded-full border border-[#222] overflow-hidden">
-              <div className="h-full bg-[#ff9500] transition-all duration-1000" style={{ width: `${cliente.progresso}%` }} />
-            </div>
-            <div className="mt-8 flex items-center gap-4">
-               <div className="p-3 bg-[#ff9500]/10 rounded-xl text-[#ff9500]"><ChevronRight size={24}/></div>
-               <div>
-                 <p className="text-[10px] text-gray-500 uppercase">Etapa Atual</p>
-                 <p className="text-lg md:text-xl font-bold">{cliente.status}</p>
-               </div>
-            </div>
-          </div>
-
-          <div className="bg-[#111111] p-6 md:p-8 rounded-3xl border border-[#222]">
-            <h2 className="text-[10px] font-bold mb-6 uppercase tracking-widest text-[#ff9500]">Galeria de Acompanhamento</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(cliente.historico_fotos || []).map((foto: any, i: number) => (
-                <div key={i} className="bg-black p-2 rounded-2xl border border-[#222] hover:border-[#ff9500] transition">
-                  <img src={foto.url} className="w-full aspect-video object-cover rounded-xl" alt="Foto do progresso" />
-                  <p className="text-[#ff9500] text-[10px] font-bold mt-3 px-2 uppercase truncate">{foto.titulo || "Foto do processo"}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Coluna IA e Técnica */}
-        <div className="space-y-8">
-          <div className="bg-[#111111] p-6 md:p-8 rounded-3xl border border-[#222]">
-            <div className="flex items-center gap-2 mb-6 font-bold text-[#ff9500]">
-              <MessageSquareText size={20}/> Consultor Técnico IA
-            </div>
-            <button onClick={() => handleConsultaIA()} className="w-full bg-[#ff9500] text-black font-bold py-4 rounded-xl hover:bg-white transition mb-4">
-              {loading ? "ANALISANDO..." : "EXPLICAR ETAPA ATUAL"}
-            </button>
-            <div className="w-full flex gap-2">
-              <input className="flex-1 bg-black border border-[#222] p-4 rounded-xl text-sm outline-none focus:border-[#ff9500]" placeholder="Dúvida específica?" value={pergunta} onChange={(e) => setPergunta(e.target.value)} />
-              <button onClick={() => handleConsultaIA(pergunta)} className="bg-[#222] px-4 rounded-xl hover:bg-[#ff9500] transition"><Send size={18} /></button>
-            </div>
-            {resposta && <div className="mt-6 p-4 bg-black rounded-xl text-xs text-gray-400 border border-[#222] leading-relaxed">{resposta}</div>}
-          </div>
-
-          <div className="bg-[#111111] p-8 rounded-3xl border border-[#222] text-sm">
-             <div className="flex items-center gap-2 mb-4 text-[#ff9500] font-bold"><Info size={16}/> Dados Técnicos</div>
-             <div className="space-y-3 text-gray-400">
-                <p>Nível: <span className="text-white">{cliente.nivel_blindagem || "III-A"}</span></p>
-                <p>Próxima Revisão: <span className="text-white">{cliente.data_revisao ? new Date(cliente.data_revisao).toLocaleDateString('pt-BR') : "Agendar"}</span></p>
-             </div>
-          </div>
+          <h3 className="font-bold text-white">Consultor Técnico</h3>
+          <p className="text-[10px] text-gray-500 uppercase tracking-widest">Sistemas Tiger AI</p>
         </div>
       </div>
-    </main>
+
+      {/* Botão de Ação Rápida */}
+      <button 
+        onClick={() => enviarParaIA("Explique a etapa atual do meu veículo.")}
+        className="w-full bg-orange-500/10 border border-orange-500/20 text-orange-500 font-bold py-4 rounded-2xl hover:bg-orange-500 hover:text-black transition-all duration-300 mb-6"
+      >
+        EXPLICAR ETAPA ATUAL
+      </button>
+
+      {/* Input de Mensagem */}
+      <div className="relative mb-6">
+        <textarea 
+          className="w-full bg-[#111] border border-[#222] p-4 pr-14 rounded-2xl text-white outline-none focus:border-orange-500 transition-all h-32 resize-none placeholder:text-[#444]" 
+          placeholder={`Olá ${clienteNome}, como posso te ajudar?`}
+          value={mensagem}
+          onChange={(e) => setMensagem(e.target.value)}
+        />
+        <button 
+          onClick={() => enviarParaIA(mensagem)}
+          disabled={loading}
+          className="absolute right-3 bottom-3 bg-orange-500 text-black p-3 rounded-xl hover:scale-105 transition-all disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+        </button>
+      </div>
+
+      {/* Resposta da IA com estilo premium */}
+      {resposta && (
+        <div className="bg-[#111] p-5 rounded-2xl border-l-4 border-orange-500 text-sm text-gray-300 mb-6 italic animate-in fade-in slide-in-from-bottom-2 duration-500">
+           <div className="flex items-center gap-2 mb-2 text-orange-500">
+             <Sparkles size={14} />
+             <span className="text-[10px] uppercase font-bold tracking-widest">Tiger AI</span>
+           </div>
+           {resposta}
+        </div>
+      )}
+
+      {/* Rodapé de Contato */}
+      <button 
+        onClick={() => { playClick(); window.open('https://wa.me/SEUNUMERO'); }}
+        className="w-full flex items-center justify-center gap-3 bg-[#222] text-white font-bold py-4 rounded-2xl hover:bg-orange-500 hover:text-black transition-all"
+      >
+        <Phone size={20} /> FALAR COM EQUIPE
+      </button>
+    </div>
   );
-}
+};

@@ -27,10 +27,10 @@ export interface Cliente {
   
   // Processo
   status: string;
-  progresso: number;
+  progresso: number; // Campo crítico de progresso (0 a 100)
   etapa_atual: number;
   
-  // Revisão (Campos novos da sua tabela)
+  // Revisão
   tipo_revisao?: string | null;
   data_revisao?: string | null;
   hora_revisao?: string | null;
@@ -51,7 +51,7 @@ export const criarClientePadrao = (): Cliente => ({
   placa: "",
   chassi: "",
   nivel_blindagem: "III-A",
-  status: "Em análise", // Atualizado conforme padrão da sua tabela
+  status: "Entrada",
   progresso: 0,
   etapa_atual: 1,
   tipo_revisao: "",

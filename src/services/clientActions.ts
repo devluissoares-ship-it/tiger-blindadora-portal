@@ -1,15 +1,33 @@
 // src/services/clientActions.ts
 
-export const processarUploadSimulado = async (file: File): Promise<{ success: boolean; dataUrl: string; fileName: string; error?: string }> => {
-  // 1. Removi o Audio daqui. Não se mistura interface (som) com lógica de dados (service).
-  // Se quiser som, chame a função de som no componente, não no serviço.
+/**
+ * Processa a leitura de um arquivo localmente antes do envio.
+ * Mantive como "Simulado" conforme seu nome original, mas agora com tipagem rigorosa.
+ */
+export interface UploadResult {
+  success: boolean;
+  dataUrl: string;
+  fileName: string;
+  error?: string;
+}
 
+export const processarUploadSimulado = async (file: File): Promise<UploadResult> => {
   try {
-    // 2. Simplificado: FileReader convertido para Promise sem travas desnecessárias
+    // Validação básica de arquivo
+    if (!file) throw new Error("Nenhum arquivo fornecido.");
+
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error("Erro ao ler o arquivo"));
+      
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          reject(new Error("Falha ao converter arquivo para string."));
+        }
+      };
+      
+      reader.onerror = () => reject(new Error("Erro ao ler o arquivo no navegador."));
       reader.readAsDataURL(file);
     });
 
@@ -18,13 +36,15 @@ export const processarUploadSimulado = async (file: File): Promise<{ success: bo
       dataUrl, 
       fileName: file.name 
     };
+
   } catch (error: any) {
-    console.error("Erro no processamento:", error);
+    console.error("Falha técnica no processamento do arquivo:", error);
+    
     return { 
       success: false, 
       dataUrl: "", 
       fileName: file.name,
-      error: error.message 
+      error: error instanceof Error ? error.message : "Erro desconhecido"
     };
   }
 };

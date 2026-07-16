@@ -15,9 +15,7 @@ export default function NovoCliente() {
     senha: "" 
   });
 
-  // Função utilitária de notificação otimizada
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    // Som disparado de forma independente sem travar a thread principal
     new Audio(type === 'success' ? '/notification.mp3' : '/error.mp3').play().catch(() => {});
     
     const toast = document.createElement('div');
@@ -33,15 +31,25 @@ export default function NovoCliente() {
     e.preventDefault();
     setLoading(true);
 
+    // O ID é gerado aqui. Certifique-se de que é este formato que você usa no login.
+    const slugNome = formData.nome.toLowerCase().replace(/\s+/g, '-');
+    const randomSuffix = Math.floor(Math.random() * 900) + 100;
+    const finalId = `${slugNome}-${randomSuffix}`.toUpperCase();
+
     const novoCliente = {
-      id: `${formData.nome.toLowerCase().replace(/\s+/g, '-')}-${Math.floor(Math.random() * 1000)}`,
+      id: finalId, // ID gerado e garantido
       nome: formData.nome,
       veiculo: formData.veiculo,
       telefone: formData.telefone,
-      senha: formData.senha,
+      senha: formData.senha, // A senha entra aqui
       status: "Entrada",
       progresso: 0,
-      etapa_atual: 1, // Ajustado para snake_case conforme padrão Supabase
+      etapa_atual: 1,
+      // Inicializamos campos vazios para não dar erro no portal do cliente
+      chassi: "",
+      tipo_revisao: "Padrão",
+      data_revisao: null,
+      hora_revisao: "",
       historico_fotos: [],
       historico_eventos: [{ 
         data: new Date().toLocaleDateString('pt-BR'), 
@@ -72,10 +80,10 @@ export default function NovoCliente() {
       <h1 className="text-2xl font-bold mb-6 text-[#ff9500]">Novo Cadastro de Projeto</h1>
       
       <form onSubmit={handleSubmit} className="bg-[#111111] p-8 rounded-xl border border-[#222] max-w-lg shadow-2xl space-y-4">
-        <input className="w-full p-3 bg-[#050505] border border-[#222] rounded-lg text-white focus:border-[#ff9500] outline-none transition-all" placeholder="Nome do Cliente" onChange={(e) => setFormData({...formData, nome: e.target.value})} required />
-        <input className="w-full p-3 bg-[#050505] border border-[#222] rounded-lg text-white focus:border-[#ff9500] outline-none transition-all" placeholder="Veículo" onChange={(e) => setFormData({...formData, veiculo: e.target.value})} required />
-        <input className="w-full p-3 bg-[#050505] border border-[#222] rounded-lg text-white focus:border-[#ff9500] outline-none transition-all" placeholder="Telefone" onChange={(e) => setFormData({...formData, telefone: e.target.value})} required />
-        <input className="w-full p-3 bg-[#050505] border border-[#222] rounded-lg text-white focus:border-[#ff9500] outline-none transition-all" placeholder="Senha de Acesso" onChange={(e) => setFormData({...formData, senha: e.target.value})} required />
+        <input className="w-full p-3 bg-[#050505] border border-[#222] rounded-lg text-white focus:border-[#ff9500] outline-none" placeholder="Nome do Cliente" onChange={(e) => setFormData({...formData, nome: e.target.value})} required />
+        <input className="w-full p-3 bg-[#050505] border border-[#222] rounded-lg text-white focus:border-[#ff9500] outline-none" placeholder="Veículo" onChange={(e) => setFormData({...formData, veiculo: e.target.value})} required />
+        <input className="w-full p-3 bg-[#050505] border border-[#222] rounded-lg text-white focus:border-[#ff9500] outline-none" placeholder="Telefone" onChange={(e) => setFormData({...formData, telefone: e.target.value})} required />
+        <input className="w-full p-3 bg-[#050505] border border-[#222] rounded-lg text-white focus:border-[#ff9500] outline-none" placeholder="Senha de Acesso" onChange={(e) => setFormData({...formData, senha: e.target.value})} required />
 
         <button type="submit" disabled={loading} className="w-full bg-[#ff9500] text-black font-bold p-3 rounded-lg mt-4 flex justify-center items-center gap-2 hover:bg-[#e68600] transition-all disabled:opacity-50">
           {loading ? <><Loader2 className="animate-spin" size={18}/> Processando...</> : "Criar Cadastro"}
