@@ -27,7 +27,7 @@ export interface Cliente {
   
   // Processo
   status: string;
-  progresso: number; // Campo crítico de progresso (0 a 100)
+  progresso: number;
   etapa_atual: number;
   
   // Revisão
@@ -40,6 +40,7 @@ export interface Cliente {
   historico_eventos: HistoricoEvento[];
 }
 
+// A chave para resolver seu erro está aqui: este 'export' torna a função disponível para outros arquivos
 export const criarClientePadrao = (): Cliente => ({
   id: "",
   senha: "",

@@ -38,6 +38,7 @@ export async function criarNovoCliente(data: Cliente) {
     if (error) throw error;
 
     revalidatePath("/admin/clientes");
+    revalidatePath("/admin/dashboard");
     return { success: true, data: novo };
   } catch (error: any) {
     console.error("Erro [criarNovoCliente]:", error);
@@ -82,8 +83,10 @@ export async function atualizarCliente(id: string, data: Partial<Cliente>) {
     if (error) throw error;
 
     // Dispara a revalidação de todas as rotas que dependem desses dados
+    // Incluímos /admin/dashboard para garantir que ele busque os dados atualizados do banco
     revalidatePath("/admin/clientes");
     revalidatePath(`/admin/clientes/${id}/editar`);
+    revalidatePath(`/admin/dashboard`);
     revalidatePath(`/portal/${id}`);
     
     return { success: true };
