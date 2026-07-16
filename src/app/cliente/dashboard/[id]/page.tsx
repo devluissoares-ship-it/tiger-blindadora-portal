@@ -13,9 +13,12 @@ export default function DashboardCliente() {
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
   const [pergunta, setPergunta] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!id) return;
+    
     const fetchCliente = async () => {
       const { data, error } = await supabase
         .from('clientes')
@@ -55,6 +58,8 @@ export default function DashboardCliente() {
     }
   };
 
+  if (!mounted) return null;
+
   if (!cliente) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#ff9500]">
       <Loader2 className="animate-spin" size={48} />
@@ -63,7 +68,6 @@ export default function DashboardCliente() {
 
   return (
     <main className="min-h-screen bg-[#050505] text-white p-4 md:p-8">
-      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#ff9500]">TIGER.</h1>
@@ -75,7 +79,6 @@ export default function DashboardCliente() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna Principal */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
             <h2 className="text-xs font-bold uppercase tracking-widest text-[#ff9500] mb-4">Progresso: {cliente.progresso}%</h2>
@@ -85,11 +88,10 @@ export default function DashboardCliente() {
             <p className="mt-4 text-sm">Etapa Atual: <span className="font-bold text-white">{cliente.status}</span></p>
           </div>
 
-          {/* Galeria de Fotos */}
           <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
             <h2 className="text-xs font-bold uppercase tracking-widest mb-4 text-[#ff9500]">Registro Fotográfico</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {cliente.historico_fotos?.length > 0 ? (
+              {cliente.historico_fotos && cliente.historico_fotos.length > 0 ? (
                 cliente.historico_fotos.map((foto, i) => (
                   <div key={i} className="bg-black p-2 rounded-xl border border-[#222]">
                     <img src={foto.url} className="w-full h-32 object-cover rounded-lg" alt="Progresso" />
@@ -103,7 +105,6 @@ export default function DashboardCliente() {
           </div>
         </div>
 
-        {/* Coluna Lateral - IA e Informações */}
         <div className="space-y-6">
           <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
             <h2 className="font-bold text-[#ff9500] mb-4 text-sm uppercase">Consultor Técnico IA</h2>
