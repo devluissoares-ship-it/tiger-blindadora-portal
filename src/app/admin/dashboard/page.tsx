@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { AdminDashboardClient } from "@/components/admin/AdminDashboardClient"; 
 import { supabase } from "@/lib/supabase";
-import { Cliente } from '@/types/cliente'; // Importação do tipo definida no seu projeto
+import { Cliente } from '@/types/cliente';
 
 export default function AdminDashboardPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
 
-  // Relógio em tempo real
+  // Relógio em tempo real - otimizado
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -25,19 +25,25 @@ export default function AdminDashboardPage() {
 
   // Função para buscar dados
   const fetchData = async () => {
-    const { data, error } = await supabase.from('clientes').select('*').order('nome');
-    if (error) {
-      console.error("Erro ao buscar clientes:", error);
-    } else {
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .order('nome', { ascending: true });
+        
+      if (error) throw error;
       setClientes(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar clientes:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
 
-    // ESCUTA EM TEMPO REAL: Se algo mudar no banco, o Dashboard atualiza na hora!
+    // ESCUTA EM TEMPO REAL
     const channel = supabase
       .channel('realtime-clientes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, () => {
@@ -60,9 +66,13 @@ export default function AdminDashboardPage() {
     <main className="min-h-screen bg-[#050505] text-white p-6">
       {/* Header */}
       <header className="flex justify-between items-center mb-8 border-b border-[#222] pb-6">
-        <img src="/logo-tiger.png" className="w-20 hover:scale-105 transition-transform cursor-pointer" alt="Tiger Logo" />
+        <img 
+          src="/logo-tiger.png" 
+          className="w-20 hover:scale-105 transition-transform cursor-pointer" 
+          alt="Tiger Logo" 
+        />
         
-        <div className="bg-[#0a0a0a] border border-[#222] px-6 py-3 rounded-2xl text-right">
+        <div className="bg-[#0a0a0a] border border-[#222] px-6 py-3 rounded-2xl text-right shadow-[0_0_15px_rgba(0,0,0,0.5)]">
           <p className="text-orange-500 font-bold text-lg font-mono">
             {time.toLocaleTimeString('pt-BR')}
           </p>
@@ -74,8 +84,14 @@ export default function AdminDashboardPage() {
 
       {/* Container Principal */}
       <div onClick={() => playSound('clickbuton.mp3')}>
-        {/* Passamos o key={clientes.length} para forçar a remontagem caso a lista mude */}
-        <AdminDashboardClient key={clientes.length} initialClientes={clientes} />
+        {/* 
+          O key={clientes.length} é um excelente truque para o React recarregar 
+          o dashboard se a lista de projetos sofrer alteração bruta.
+        */}
+        <AdminDashboardClient 
+          key={clientes.length} 
+          initialClientes={clientes} 
+        />
       </div>
     </main>
   );

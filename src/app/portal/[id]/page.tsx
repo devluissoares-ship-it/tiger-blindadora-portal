@@ -50,7 +50,11 @@ export default function PortalPage() {
     }
   };
 
-  if (!cliente) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><Loader2 className="animate-spin text-orange-500" size={48} /></div>;
+  if (!cliente) return (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <Loader2 className="animate-spin text-orange-500" size={48} />
+    </div>
+  );
 
   return (
     <main className="min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans">
@@ -67,7 +71,9 @@ export default function PortalPage() {
         {/* Painel Esquerdo: Status e Fotos */}
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-[#0a0a0a] p-8 rounded-[2rem] border border-[#222]">
-            <h2 className="text-orange-500 font-bold mb-4 uppercase text-xs tracking-widest">Etapa Atual: {cliente.status}</h2>
+            <h2 className="text-orange-500 font-bold mb-4 uppercase text-xs tracking-widest">
+              Etapa Atual: {cliente.status}
+            </h2>
             <div className="w-full bg-black h-4 rounded-full border border-[#222] overflow-hidden">
                 <div className="bg-orange-500 h-full transition-all duration-1000" style={{ width: `${cliente.progresso}%` }} />
             </div>
@@ -77,9 +83,18 @@ export default function PortalPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {cliente.historico_fotos?.map((f: any, i: number) => (
               <div key={i} className="bg-[#0a0a0a] p-5 rounded-[2rem] border border-[#222] hover:border-orange-500/50 transition">
-                <img src={f.url} className="rounded-2xl w-full h-48 object-cover mb-4" />
-                <h4 className="font-bold text-orange-500 mb-1">{f.etapa}</h4>
-                <p className="text-sm text-gray-400">{f.descricao}</p>
+                <img src={f.url} className="rounded-2xl w-full h-48 object-cover mb-4" alt="Processo" />
+                
+                {/* Lógica de limpeza: só exibe se o título for relevante e não for "Admin" */}
+                {f.etapa && f.etapa.toLowerCase() !== 'admin' && (
+                  <h4 className="font-bold text-orange-500 mb-1 uppercase tracking-wider text-xs">
+                    {f.etapa}
+                  </h4>
+                )}
+                
+                {f.descricao && (
+                  <p className="text-sm text-gray-400">{f.descricao}</p>
+                )}
               </div>
             ))}
           </div>

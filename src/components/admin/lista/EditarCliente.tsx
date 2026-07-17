@@ -28,13 +28,21 @@ export default function EditarCliente({ id, initialData }: { id: string; initial
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const etapaNome = prompt("Qual o nome desta etapa? (ex: Desmontagem)", formData.status || "Atualização");
+    if (etapaNome === null) return;
+
     playSound('click.mp3');
     const fileName = `${id}/${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabase.storage.from('imagens').upload(fileName, file);
     if (uploadError) { notify("Erro ao subir imagem!"); return; }
 
     const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/imagens/${fileName}`;
-    const novaFoto: HistoricoFoto = { url: publicUrl, titulo: "Nova Etapa", descricao: "Admin" };
+    
+    const novaFoto: HistoricoFoto = { 
+      url: publicUrl, 
+      titulo: etapaNome, 
+      descricao: "" 
+    };
     
     const updatedFotos = [...(formData.historico_fotos || []), novaFoto];
     await supabase.from('clientes').update({ historico_fotos: updatedFotos }).eq('id', id);
@@ -47,7 +55,8 @@ export default function EditarCliente({ id, initialData }: { id: string; initial
   const handleWhatsApp = () => {
     playSound('click.mp3');
     const urlLogin = "https://tiger-blindadora-portal.vercel.app/login-cliente";
-    const msg = `🛡️ TIGER BLINDADORA%0AOlá, ${formData.nome}!%0A%0AInformamos que seu projeto avançou para: ${formData.status}.%0A%0A🔗 Acesse: ${urlLogin}%0A👤 ID: ${id}%0A🔑 Senha: ${formData.senha}`;
+    // REINSERIDO O ID E A SENHA PARA O CLIENTE TER ACESSO
+    const msg = `🛡️ TIGER BLINDADORA%0AOlá, ${formData.nome}!%0A%0AInformamos que seu projeto avançou para: ${formData.status}.%0A%0A🔗 Acesse: ${urlLogin}%0A👤 ID: ${id}%0A🔑 Senha: ${formData.senha}%0A%0AAtenciosamente,%0ATiger Blindadora`;
     window.open(`https://wa.me/${formData.telefone?.replace(/\D/g, "")}?text=${msg}`, "_blank");
   };
 
@@ -59,7 +68,6 @@ export default function EditarCliente({ id, initialData }: { id: string; initial
     try {
       const novoHistorico = [...(formData.historico_eventos || [])];
       
-      // Se a etapa mudou, adiciona no histórico com o campo 'titulo' exigido
       if (formData.status !== initialData.status) {
         novoHistorico.push({
           titulo: "Atualização de Status",
@@ -96,7 +104,10 @@ export default function EditarCliente({ id, initialData }: { id: string; initial
         <h3 className="text-orange-500 font-bold mb-4 text-xs uppercase tracking-widest">Acompanhamento Visual</h3>
         <div className="grid grid-cols-4 gap-4 mb-4">
           {formData.historico_fotos?.map((foto, idx) => (
-            <img key={idx} src={foto.url} className="w-full h-24 object-cover rounded-lg border border-[#333]" />
+            <div key={idx} className="relative group">
+              <img src={foto.url} className="w-full h-24 object-cover rounded-lg border border-[#333]" />
+              <p className="text-[9px] text-orange-500 font-bold mt-1 uppercase">{foto.titulo}</p>
+            </div>
           ))}
         </div>
         <label className="border-2 border-dashed border-[#333] p-6 flex flex-col items-center cursor-pointer hover:border-orange-500 transition-all rounded-xl">
@@ -111,8 +122,12 @@ export default function EditarCliente({ id, initialData }: { id: string; initial
         <input className="bg-[#0a0a0a] border border-[#222] p-4 rounded-xl outline-none focus:border-orange-500" value={id} disabled />
         <input className="bg-[#0a0a0a] border border-[#222] p-4 rounded-xl outline-none focus:border-orange-500" placeholder="Senha" value={formData.senha || ""} onChange={(e) => setFormData(p => ({...p, senha: e.target.value}))} />
         <input className="col-span-2 bg-[#0a0a0a] border border-[#222] p-4 rounded-xl outline-none focus:border-orange-500" placeholder="Nome" value={formData.nome || ""} onChange={(e) => setFormData(p => ({...p, nome: e.target.value}))} />
+        
         <input className="bg-[#0a0a0a] border border-[#222] p-4 rounded-xl outline-none focus:border-orange-500" placeholder="Modelo" value={formData.modelo || ""} onChange={(e) => setFormData(p => ({...p, modelo: e.target.value}))} />
         <input className="bg-[#0a0a0a] border border-[#222] p-4 rounded-xl outline-none focus:border-orange-500" placeholder="Ano" value={formData.ano_modelo || ""} onChange={(e) => setFormData(p => ({...p, ano_modelo: e.target.value}))} />
+        
+        <input className="bg-[#0a0a0a] border border-[#222] p-4 rounded-xl outline-none focus:border-orange-500" placeholder="Placa" value={formData.placa || ""} onChange={(e) => setFormData(p => ({...p, placa: e.target.value}))} />
+        <input className="bg-[#0a0a0a] border border-[#222] p-4 rounded-xl outline-none focus:border-orange-500" placeholder="Chassi" value={formData.chassi || ""} onChange={(e) => setFormData(p => ({...p, chassi: e.target.value}))} />
         
         <select className="col-span-2 bg-[#0a0a0a] border border-[#222] p-4 rounded-xl text-white appearance-none cursor-pointer outline-none focus:border-orange-500" value={formData.nivel_blindagem || "III-A"} onChange={(e) => setFormData(p => ({...p, nivel_blindagem: e.target.value}))}>
             <option value="III-A">Blindagem Nível III-A</option>
@@ -147,7 +162,6 @@ export default function EditarCliente({ id, initialData }: { id: string; initial
         </div>
       </div>
 
-      {/* BOTÕES DE AÇÃO */}
       <div className="space-y-4">
         <button type="submit" disabled={saving} className="w-full bg-orange-500 text-black font-bold py-5 rounded-2xl hover:bg-orange-400 transition-all flex items-center justify-center gap-2">
             {saving ? <Loader2 className="animate-spin" /> : "Salvar Alterações"}

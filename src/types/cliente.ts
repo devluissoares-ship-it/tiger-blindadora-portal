@@ -35,12 +35,17 @@ export interface Cliente {
   data_revisao?: string | null;
   hora_revisao?: string | null;
   
+  // --- ADICIONE ESTAS LINHAS ABAIXO ---
+  data_revisao_6m?: string | null;
+  data_revisao_10k?: string | null;
+  data_revisao_anual?: string | null;
+  // ------------------------------------
+  
   // JSONB
   historico_fotos: HistoricoFoto[];
   historico_eventos: HistoricoEvento[];
 }
 
-// A chave para resolver seu erro está aqui: este 'export' torna a função disponível para outros arquivos
 export const criarClientePadrao = (): Cliente => ({
   id: "",
   senha: "",
@@ -58,6 +63,10 @@ export const criarClientePadrao = (): Cliente => ({
   tipo_revisao: "",
   data_revisao: "",
   hora_revisao: "",
+  // Inicialize também as novas propriedades aqui
+  data_revisao_6m: null,
+  data_revisao_10k: null,
+  data_revisao_anual: null,
   historico_fotos: [],
   historico_eventos: []
 });
