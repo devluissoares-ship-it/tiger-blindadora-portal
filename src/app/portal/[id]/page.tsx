@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from "@/lib/supabase";
-import { Loader2, Sparkles, Phone, Send } from 'lucide-react';
+import { Loader2, Sparkles, Phone, Send, ClipboardCheck, CheckSquare } from 'lucide-react';
 
 export default function PortalPage() {
   const { id } = useParams();
@@ -28,6 +28,7 @@ export default function PortalPage() {
   }, [id]);
 
   const enviarParaIA = async (tipo: 'etapa' | 'pergunta', texto?: string) => {
+    if (!cliente) return;
     setLoading(true);
     playSound('click');
     
@@ -36,9 +37,13 @@ export default function PortalPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            nomeCliente: cliente?.nome, 
-            status: cliente?.status, 
-            pergunta: tipo === 'etapa' ? "Explique a etapa atual" : texto 
+            nomeCliente: cliente.nome, 
+            status: cliente.status, 
+            veiculo: cliente.veiculo,
+            progresso: cliente.progresso,
+            pergunta: tipo === 'etapa' ? "Explique a etapa atual" : texto,
+            checklistEntrada: cliente.checklist_entrada,
+            fotosEntrada: cliente.fotos_entrada
         })
       });
       const data = await res.json();
@@ -68,7 +73,7 @@ export default function PortalPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Painel Esquerdo: Status e Fotos */}
+        {/* Painel Esquerdo: Status, Vistoria de Entrada e Fotos */}
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-[#0a0a0a] p-8 rounded-[2rem] border border-[#222]">
             <h2 className="text-orange-500 font-bold mb-4 uppercase text-xs tracking-widest">
@@ -80,21 +85,75 @@ export default function PortalPage() {
             <p className="mt-2 font-bold text-lg">{cliente.progresso}% de conclusão</p>
           </div>
 
+          {/* CHECKLIST E VISTORIA DE ENTRADA (Exibido de forma transparente para o cliente) */}
+          {cliente.checklist_entrada && (
+            <div className="bg-[#0a0a0a] p-8 rounded-[2rem] border border-[#222]">
+              <div className="flex items-center gap-3 mb-6 text-orange-500">
+                <ClipboardCheck size={22} />
+                <h3 className="font-bold uppercase tracking-wider text-xs">Vistoria e Checklist de Entrada do Veículo</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-6 text-gray-300">
+                <div className="flex items-center gap-2 bg-black p-3.5 rounded-2xl border border-[#222]">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.lataria ? "text-green-500" : "text-gray-600"} />
+                  <span>Lataria (Riscos/Amassados)</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black p-3.5 rounded-2xl border border-[#222]">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.vidros_e_parabrisa ? "text-green-500" : "text-gray-600"} />
+                  <span>Vidros e Para-brisa</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black p-3.5 rounded-2xl border border-[#222]">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.interior_e_bancos ? "text-green-500" : "text-gray-600"} />
+                  <span>Interior e Bancos</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black p-3.5 rounded-2xl border border-[#222]">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.painel_e_km ? "text-green-500" : "text-gray-600"} />
+                  <span>Painel e Quilometragem</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black p-3.5 rounded-2xl border border-[#222] md:col-span-2">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.acessorios_e_pertences ? "text-green-500" : "text-gray-600"} />
+                  <span>Acessórios e Pertences</span>
+                </div>
+              </div>
+
+              {cliente.checklist_entrada.observacoes && (
+                <div className="mb-6 p-4 bg-black rounded-2xl border border-[#222] text-sm text-gray-400">
+                  <span className="text-orange-500 font-bold">Observações da Entrada:</span> {cliente.checklist_entrada.observacoes}
+                </div>
+              )}
+
+              {/* FOTOS DA VISTORIA INICIAL */}
+              {cliente.fotos_entrada && cliente.fotos_entrada.length > 0 && (
+                <div>
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">Fotos da Vistoria Inicial</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {cliente.fotos_entrada.map((fotoUrl: string, i: number) => (
+                      <div key={i} className="bg-black p-3 rounded-2xl border border-[#222]">
+                        <img src={fotoUrl} className="w-full h-32 object-cover rounded-xl" alt="Vistoria Entrada" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* HISTÓRICO FOTOGRÁFICO DE EVOLUÇÃO (Com o Título/Nome da Fase Embaixo) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {cliente.historico_fotos?.map((f: any, i: number) => (
-              <div key={i} className="bg-[#0a0a0a] p-5 rounded-[2rem] border border-[#222] hover:border-orange-500/50 transition">
-                <img src={f.url} className="rounded-2xl w-full h-48 object-cover mb-4" alt="Processo" />
+              <div key={i} className="bg-[#0a0a0a] rounded-[2rem] border border-[#222] hover:border-orange-500/50 transition overflow-hidden flex flex-col shadow-lg">
+                <div className="w-full h-48 bg-black overflow-hidden">
+                  <img src={f.url} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt="Processo" />
+                </div>
                 
-                {/* Lógica de limpeza: só exibe se o título for relevante e não for "Admin" */}
-                {f.etapa && f.etapa.toLowerCase() !== 'admin' && (
-                  <h4 className="font-bold text-orange-500 mb-1 uppercase tracking-wider text-xs">
-                    {f.etapa}
+                {/* Nome/Rótulo da Etapa Exatamente Embaixo da Imagem */}
+                <div className="p-4 bg-black/90 border-t border-[#222] text-center">
+                  <h4 className="font-extrabold text-orange-400 uppercase tracking-widest text-xs">
+                    {f.titulo || f.etapa || "Atualização"}
                   </h4>
-                )}
-                
-                {f.descricao && (
-                  <p className="text-sm text-gray-400">{f.descricao}</p>
-                )}
+                  {f.descricao && (
+                    <p className="text-xs text-gray-400 mt-1">{f.descricao}</p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -108,7 +167,7 @@ export default function PortalPage() {
           </div>
           
           <button onClick={() => enviarParaIA('etapa')} className="w-full bg-orange-500 text-black font-bold py-4 rounded-2xl mb-4 hover:bg-white transition-all">
-            EXPLICAR ETAPA ATUAL
+            {loading ? "Processando..." : "EXPLICAR ETAPA ATUAL"}
           </button>
           
           <div className="relative mb-4">
@@ -129,7 +188,7 @@ export default function PortalPage() {
             </div>
           )}
 
-          <button onClick={() => { playSound('notification'); window.open('https://wa.me/SEUNUMERO'); }} 
+          <button onClick={() => { playSound('notification'); window.open('https://wa.me/5511991343588'); }} 
             className="w-full bg-[#222] py-4 rounded-2xl hover:bg-orange-500 font-bold flex justify-center gap-2 items-center transition">
             <Phone size={20} /> FALAR COM EQUIPE
           </button>

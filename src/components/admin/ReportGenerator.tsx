@@ -31,21 +31,24 @@ ${window.location.origin}/dashboard?id=${cliente.id}`;
   };
 
   return (
-    <div className="space-y-3 bg-[#111] p-6 rounded-2xl border border-[#222]">
-      <h3 className="text-white font-bold mb-4 uppercase text-sm">Ações do Projeto</h3>
-      <button 
-        onClick={handleDownload}
-        className="w-full bg-[#ff9500] hover:bg-[#e68600] text-black p-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-      >
-        <Download size={18} /> Baixar Ficha Técnica
-      </button>
+    <div className="bg-[#111] p-6 rounded-2xl border border-[#222] shadow-sm space-y-4">
+      <h3 className="text-white font-bold uppercase text-xs tracking-widest">Ações do Projeto</h3>
       
-      <button 
-        onClick={gerarWhatsApp}
-        className="w-full bg-[#050505] border border-[#ff9500] text-[#ff9500] hover:bg-[#ff9500] hover:text-black p-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-      >
-        <Share2 size={18} /> Compartilhar via WhatsApp
-      </button>
+      <div className="space-y-3">
+        <button 
+          onClick={handleDownload}
+          className="w-full bg-orange-500 hover:bg-white text-black p-3.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md"
+        >
+          <Download size={16} /> Baixar Ficha Técnica
+        </button>
+        
+        <button 
+          onClick={gerarWhatsApp}
+          className="w-full bg-[#161616] border border-orange-500/40 text-orange-400 hover:bg-orange-500 hover:text-black p-3.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm"
+        >
+          <Share2 size={16} /> Compartilhar via WhatsApp
+        </button>
+      </div>
     </div>
   );
 };

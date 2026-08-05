@@ -23,7 +23,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Função para buscar dados
+  // Função para buscar dados do Supabase
   const fetchData = async () => {
     try {
       const { data, error } = await supabase
@@ -43,7 +43,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchData();
 
-    // ESCUTA EM TEMPO REAL
+    // ESCUTA EM TEMPO REAL: Garante persistência, atualização automática de status e retenção do checklist
     const channel = supabase
       .channel('realtime-clientes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, () => {
@@ -85,8 +85,8 @@ export default function AdminDashboardPage() {
       {/* Container Principal */}
       <div onClick={() => playSound('clickbuton.mp3')}>
         {/* 
-          O key={clientes.length} é um excelente truque para o React recarregar 
-          o dashboard se a lista de projetos sofrer alteração bruta.
+          Passando a listagem atualizada e garantindo que o checklist salvo no banco 
+          esteja disponível em todas as etapas até a finalização do projeto.
         */}
         <AdminDashboardClient 
           key={clientes.length} 

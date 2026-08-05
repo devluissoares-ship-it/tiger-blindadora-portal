@@ -25,6 +25,11 @@ export async function criarNovoCliente(data: Cliente) {
       tipo_revisao: data.tipo_revisao || null,
       data_revisao: data.data_revisao || null,
       hora_revisao: data.hora_revisao || null,
+      data_revisao_6m: data.data_revisao_6m || null,
+      data_revisao_10k: data.data_revisao_10k || null,
+      data_revisao_anual: data.data_revisao_anual || null,
+      checklist_entrada: data.checklist_entrada || null,
+      fotos_entrada: data.fotos_entrada || [],
       historico_fotos: data.historico_fotos || [],
       historico_eventos: data.historico_eventos || []
     };
@@ -51,7 +56,7 @@ export async function criarNovoCliente(data: Cliente) {
  */
 export async function atualizarCliente(id: string, data: Partial<Cliente>) {
   try {
-    // Mapeamento idêntico ao de criação para garantir compatibilidade com as colunas do banco
+    // Mapeamento atualizado incluindo os campos de checklist e fotos de entrada
     const payload: any = {
       nome: data.nome,
       telefone: data.telefone,
@@ -68,6 +73,11 @@ export async function atualizarCliente(id: string, data: Partial<Cliente>) {
       tipo_revisao: data.tipo_revisao,
       data_revisao: data.data_revisao,
       hora_revisao: data.hora_revisao,
+      data_revisao_6m: data.data_revisao_6m,
+      data_revisao_10k: data.data_revisao_10k,
+      data_revisao_anual: data.data_revisao_anual,
+      checklist_entrada: data.checklist_entrada,
+      fotos_entrada: data.fotos_entrada,
       historico_fotos: data.historico_fotos,
       historico_eventos: data.historico_eventos
     };
@@ -83,7 +93,6 @@ export async function atualizarCliente(id: string, data: Partial<Cliente>) {
     if (error) throw error;
 
     // Dispara a revalidação de todas as rotas que dependem desses dados
-    // Incluímos /admin/dashboard para garantir que ele busque os dados atualizados do banco
     revalidatePath("/admin/clientes");
     revalidatePath(`/admin/clientes/${id}/editar`);
     revalidatePath(`/admin/dashboard`);

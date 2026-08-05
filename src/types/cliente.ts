@@ -10,6 +10,15 @@ export interface HistoricoEvento {
   descricao: string;
 }
 
+export interface ChecklistEntrada {
+  lataria?: boolean;
+  vidros_e_parabrisa?: boolean;
+  interior_e_bancos?: boolean;
+  painel_e_km?: boolean;
+  acessorios_e_pertences?: boolean;
+  observacoes?: string;
+}
+
 export interface Cliente {
   // Identificação
   id: string;
@@ -35,13 +44,14 @@ export interface Cliente {
   data_revisao?: string | null;
   hora_revisao?: string | null;
   
-  // --- ADICIONE ESTAS LINHAS ABAIXO ---
   data_revisao_6m?: string | null;
   data_revisao_10k?: string | null;
   data_revisao_anual?: string | null;
-  // ------------------------------------
   
-  // JSONB
+  // JSONB / Novos campos de Entrada
+  checklist_entrada?: ChecklistEntrada;
+  fotos_entrada?: string[];
+  
   historico_fotos: HistoricoFoto[];
   historico_eventos: HistoricoEvento[];
 }
@@ -63,10 +73,18 @@ export const criarClientePadrao = (): Cliente => ({
   tipo_revisao: "",
   data_revisao: "",
   hora_revisao: "",
-  // Inicialize também as novas propriedades aqui
   data_revisao_6m: null,
   data_revisao_10k: null,
   data_revisao_anual: null,
+  checklist_entrada: {
+    lataria: false,
+    vidros_e_parabrisa: false,
+    interior_e_bancos: false,
+    painel_e_km: false,
+    acessorios_e_pertences: false,
+    observacoes: ""
+  },
+  fotos_entrada: [],
   historico_fotos: [],
   historico_eventos: []
 });

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from "@/lib/supabase";
-import { LogOut, Send, Loader2, Info } from 'lucide-react';
+import { LogOut, Send, Loader2, Info, CheckSquare, ClipboardCheck } from 'lucide-react';
 import { Cliente } from "@/types/cliente";
 
 export default function DashboardCliente() {
@@ -45,7 +45,10 @@ export default function DashboardCliente() {
           status: perguntaCustomizada ? `Dúvida: ${perguntaCustomizada}` : cliente.status,
           veiculo: cliente.veiculo,
           nivelBlindagem: cliente.nivel_blindagem,
-          isUserAdmin: false
+          progresso: cliente.progresso,
+          isUserAdmin: false,
+          checklistEntrada: cliente.checklist_entrada,
+          fotosEntrada: cliente.fotos_entrada
         }),
       });
       
@@ -65,6 +68,8 @@ export default function DashboardCliente() {
       <Loader2 className="animate-spin" size={48} />
     </div>
   );
+
+  const isEntrada = cliente.status === "Entrada";
 
   return (
     <main className="min-h-screen bg-[#050505] text-white p-4 md:p-8">
@@ -88,8 +93,59 @@ export default function DashboardCliente() {
             <p className="mt-4 text-sm">Etapa Atual: <span className="font-bold text-white">{cliente.status}</span></p>
           </div>
 
+          {/* EXIBIÇÃO DO CHECKLIST DE ENTRADA (Aparece apenas na fase de Entrada ou como histórico se houver dados) */}
+          {cliente.checklist_entrada && (
+            <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
+              <div className="flex items-center gap-2 mb-4 text-[#ff9500]">
+                <ClipboardCheck size={20} />
+                <h2 className="text-xs font-bold uppercase tracking-widest">Vistoria e Checklist de Entrada</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4 text-gray-300">
+                <div className="flex items-center gap-2 bg-black p-3 rounded-xl border border-[#222]">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.lataria ? "text-green-500" : "text-gray-600"} />
+                  <span>Lataria (Riscos/Amassados)</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black p-3 rounded-xl border border-[#222]">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.vidros_e_parabrisa ? "text-green-500" : "text-gray-600"} />
+                  <span>Vidros e Para-brisa</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black p-3 rounded-xl border border-[#222]">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.interior_e_bancos ? "text-green-500" : "text-gray-600"} />
+                  <span>Interior e Bancos</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black p-3 rounded-xl border border-[#222]">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.painel_e_km ? "text-green-500" : "text-gray-600"} />
+                  <span>Painel e Quilometragem</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black p-3 rounded-xl border border-[#222] md:col-span-2">
+                  <CheckSquare size={16} className={cliente.checklist_entrada.acessorios_e_pertences ? "text-green-500" : "text-gray-600"} />
+                  <span>Acessórios e Pertences</span>
+                </div>
+              </div>
+              {cliente.checklist_entrada.observacoes && (
+                <p className="text-xs text-gray-400 bg-black p-3 rounded-xl border border-[#222] mb-4">
+                  <span className="text-[#ff9500] font-bold">Obs:</span> {cliente.checklist_entrada.observacoes}
+                </p>
+              )}
+
+              {/* FOTOS DE ENTRADA */}
+              {cliente.fotos_entrada && cliente.fotos_entrada.length > 0 && (
+                <div>
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Fotos da Vistoria Inicial</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {cliente.fotos_entrada.map((fotoUrl, i) => (
+                      <div key={i} className="bg-black p-2 rounded-xl border border-[#222]">
+                        <img src={fotoUrl} className="w-full h-28 object-cover rounded-lg" alt="Vistoria Entrada" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
-            <h2 className="text-xs font-bold uppercase tracking-widest mb-4 text-[#ff9500]">Registro Fotográfico</h2>
+            <h2 className="text-xs font-bold uppercase tracking-widest mb-4 text-[#ff9500]">Registro Fotográfico de Evolução</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {cliente.historico_fotos && cliente.historico_fotos.length > 0 ? (
                 cliente.historico_fotos.map((foto, i) => (
@@ -99,7 +155,7 @@ export default function DashboardCliente() {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-600 text-sm">Nenhuma foto disponível no momento.</p>
+                <p className="text-gray-600 text-sm">Nenhuma foto de etapa disponível no momento.</p>
               )}
             </div>
           </div>
