@@ -7,12 +7,16 @@ export async function GET() {
     const { data, error } = await supabase
       .from('clientes')
       .select('*')
-      .order('created_at', { ascending: false }); // Sempre ordenado no admin
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return NextResponse.json({ clientes: data });
+
+    return NextResponse.json({ clientes: data || [] }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Erro ao buscar clientes" }, { status: 500 });
+    console.error("Erro na API Clientes GET:", error);
+    return NextResponse.json({ 
+      error: error?.message || "Erro interno ao buscar clientes" 
+    }, { status: 500 });
   }
 }
 
@@ -21,9 +25,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Validação mínima de segurança antes de ir para o banco
-    if (!body.nome || !body.id) {
-      return NextResponse.json({ error: "Dados incompletos: nome e ID são obrigatórios" }, { status: 400 });
+    // Validação mínima de segurança
+    if (!body?.nome) {
+      return NextResponse.json({ 
+        error: "Dados incompletos: o nome do cliente é obrigatório." 
+      }, { status: 400 });
     }
 
     // Montagem do payload estruturado para garantir integridade absoluta com o Supabase
@@ -49,16 +55,23 @@ export async function POST(req: Request) {
       hora_revisao: body.hora_revisao || null,
     };
 
+    // Remove o ID do payload se vier vazio/indefinido para deixar a sequence/UUID do Supabase gerar
+    if (!payload.id) {
+      delete payload.id;
+    }
+
     const { data, error } = await supabase
       .from('clientes')
       .insert([payload])
-      .select(); // Retorna o dado inserido para confirmar a persistência
+      .select();
 
     if (error) throw error;
-    
+
     return NextResponse.json({ success: true, cliente: data }, { status: 201 });
   } catch (error: any) {
     console.error("Erro na API Clientes POST:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: error?.message || "Erro interno ao cadastrar cliente." 
+    }, { status: 500 });
   }
 }
