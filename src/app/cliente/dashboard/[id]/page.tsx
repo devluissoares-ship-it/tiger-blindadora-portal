@@ -41,7 +41,8 @@ export default function DashboardCliente() {
     setResposta("");
     
     try {
-      const response = await fetch('/api/chat', {
+      // Rota ajustada para bater exatamente em /api/chat-status
+      const response = await fetch('/api/chat-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

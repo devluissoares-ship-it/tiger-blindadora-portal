@@ -51,15 +51,16 @@ export default function PortalPage() {
     playSound('click');
     
     try {
-      const res = await fetch('/api/chat', {
+      // Rota ajustada para bater exatamente em /api/chat-status
+      const res = await fetch('/api/chat-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           nomeCliente: cliente.nome, 
-          status: cliente.status, 
+          status: tipo === 'etapa' ? cliente.status : `Dúvida: ${texto}`, 
           veiculo: cliente.veiculo,
           progresso: cliente.progresso,
-          pergunta: tipo === 'etapa' ? "Explique a etapa atual" : texto,
+          isUserAdmin: false,
           checklistEntrada: cliente.checklist_entrada,
           fotosEntrada: cliente.fotos_entrada
         })

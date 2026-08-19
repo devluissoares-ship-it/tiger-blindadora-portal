@@ -85,11 +85,10 @@ export default function AdminDashboardPage() {
       {/* Container Principal */}
       <div onClick={() => playSound('clickbuton.mp3')}>
         {/* 
-          Passando a listagem atualizada e garantindo que o checklist salvo no banco 
-          esteja disponível em todas as etapas até a finalização do projeto.
+          Removido o key={clientes.length} para evitar remount desnecessário 
+          do componente filho e manter a estabilidade da UI em tempo real.
         */}
         <AdminDashboardClient 
-          key={clientes.length} 
           initialClientes={clientes} 
         />
       </div>

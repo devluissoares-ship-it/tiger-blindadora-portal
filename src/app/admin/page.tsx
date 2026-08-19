@@ -1,29 +1,50 @@
-'use client';
-import { useState } from 'react';
+"use client";
+
+import { useState, useEffect } from 'react';
+import { supabase } from "@/lib/supabase";
 import { playClick, playNotification } from "@/lib/audio";
+import { Loader2 } from 'lucide-react';
+import { Cliente } from "@/types/cliente";
 
 export default function PainelAdmin() {
-  // Simulação dos dados - em produção, isso viria de um fetch('/api/clientes')
-  const [clientes, setClientes] = useState([
-    { id: 'tiger-001', nome: 'Cliente VIP', telefone: '5511999999999', veiculo: 'Range Rover Velar', status: 'Triagem', revisao: '2026-12-30', foto: '' }
-  ]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const atualizarCliente = async (id: string, campo: string, valor: string) => {
-    playClick(); // Som ao interagir com campos
-    
-    // Atualiza localmente
-    const novosClientes = clientes.map(c => c.id === id ? { ...c, [campo]: valor } : c);
-    setClientes(novosClientes);
+  useEffect(() => {
+    const fetchClientes = async () => {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*');
+      
+      if (!error && data) {
+        setClientes(data);
+      }
+      setLoading(false);
+    };
+    fetchClientes();
+  }, []);
 
-    // Persiste no seu JSON via API
-    await fetch('/api/update-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, [campo]: valor })
-    });
+  const atualizarCliente = async (id: string, campo: string, valor: any) => {
+    playClick();
     
-    playNotification(); // Som de sucesso após a atualização
+    // Atualiza no Supabase
+    const { error } = await supabase
+      .from('clientes')
+      .update({ [campo]: valor })
+      .eq('id', id);
+
+    if (!error) {
+      // Atualiza localmente
+      setClientes(prev => prev.map(c => c.id === id ? { ...c, [campo]: valor } : c));
+      playNotification();
+    }
   };
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#FF5C00]">
+      <Loader2 className="animate-spin" size={48} />
+    </div>
+  );
 
   return (
     <div className="bg-[#050505] min-h-screen text-white p-8 font-sans">
@@ -41,7 +62,7 @@ export default function PainelAdmin() {
                 <p className="text-[#FF5C00]">{c.veiculo}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-[#555] uppercase">ID: {c.id}</p>
+                <p className="text-[10px] text-[#555] uppercase">ID: {c.id.slice(0, 8)}...</p>
               </div>
             </div>
 
@@ -50,7 +71,7 @@ export default function PainelAdmin() {
               <div>
                 <label className="text-[9px] text-[#555] uppercase mb-1 block">Status de Produção</label>
                 <select 
-                  className="w-full bg-[#000] p-4 rounded-xl border border-[#222] text-sm"
+                  className="w-full bg-[#000] p-4 rounded-xl border border-[#222] text-sm focus:border-[#FF5C00] outline-none"
                   value={c.status}
                   onChange={(e) => atualizarCliente(c.id, 'status', e.target.value)}
                 >
@@ -58,34 +79,23 @@ export default function PainelAdmin() {
                 </select>
               </div>
 
-              {/* DATA DE REVISÃO */}
+              {/* PROGRESSO */}
               <div>
-                <label className="text-[9px] text-[#555] uppercase mb-1 block">Data da Próxima Revisão</label>
+                <label className="text-[9px] text-[#555] uppercase mb-1 block">Progresso (%)</label>
                 <input 
-                  type="date"
-                  className="w-full bg-[#000] p-4 rounded-xl border border-[#222] text-sm"
-                  value={c.revisao}
-                  onChange={(e) => atualizarCliente(c.id, 'revisao', e.target.value)}
-                />
-              </div>
-
-              {/* FOTO DA TRIAGEM */}
-              <div>
-                <label className="text-[9px] text-[#555] uppercase mb-1 block">Link da Foto (Triagem/Progresso)</label>
-                <input 
-                  type="text" 
-                  placeholder="URL da Imagem..."
-                  className="w-full bg-[#000] p-4 rounded-xl border border-[#222] text-sm mb-4"
-                  onChange={(e) => atualizarCliente(c.id, 'foto', e.target.value)}
+                  type="number"
+                  className="w-full bg-[#000] p-4 rounded-xl border border-[#222] text-sm focus:border-[#FF5C00] outline-none"
+                  value={c.progresso || 0}
+                  onChange={(e) => atualizarCliente(c.id, 'progresso', parseInt(e.target.value))}
                 />
               </div>
 
               {/* AÇÕES */}
               <a 
-                href={`https://wa.me/${c.telefone}?text=Olá ${c.nome}, o status do seu veículo foi atualizado para: ${c.status}.`}
+                href={`https://wa.me/${c.telefone}?text=Olá ${c.nome}, o status do seu veículo (${c.veiculo}) foi atualizado para: ${c.status}.`}
                 target="_blank"
                 onClick={playClick}
-                className="w-full bg-[#FF5C00] text-black font-bold py-4 rounded-xl text-center uppercase tracking-widest text-xs hover:bg-white transition-all"
+                className="w-full bg-[#FF5C00] text-black font-bold py-4 rounded-xl text-center uppercase tracking-widest text-xs hover:bg-white transition-all mt-4"
               >
                 Notificar via WhatsApp
               </a>
