@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { cliente, pergunta } = body || {};
+    const { cliente, pergunta, historico } = body || {};
 
     // 2. Validação da chave de API da Groq
     const apiKey = process.env.GROQ_API_KEY;
@@ -95,7 +95,7 @@ DIRETRIZES RÍGIDAS PARA A MENSAGEM AO CLIENTE:
    - Seja direto, objetivo e profissional.
 4. COMPLIANCE: Sempre cite o rigor de normas do Exército Brasileiro (EB) para homologação balística.`;
 
-    // 5. Chamada para a API Groq corrigida com o modelo ativo
+    // 5. Chamada para a API Groq com o modelo correto e suporte a histórico + system prompt
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -103,9 +103,10 @@ DIRETRIZES RÍGIDAS PARA A MENSAGEM AO CLIENTE:
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama-3.1-70b-versatile",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
+          ...(Array.isArray(historico) ? historico : []),
           { role: "user", content: pergunta || "Gere uma atualização profissional do status atual para envio via WhatsApp." }
         ],
         temperature: 0.2
