@@ -23,7 +23,14 @@ export async function GET() {
 // POST: Salva um novo cliente com validação e suporte completo aos campos de checklist, fotos e revisões
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ 
+        error: "Corpo da requisição inválido ou JSON malformatado." 
+      }, { status: 400 });
+    }
 
     // Validação mínima de segurança
     if (!body?.nome) {
@@ -32,7 +39,7 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Montagem do payload estruturado para garantir integridade absoluta com o Supabase
+    // Montagem do payload estruturado para garantir integridade com o Supabase
     const payload = {
       ...body,
       status: body.status || "Entrada",
@@ -55,7 +62,7 @@ export async function POST(req: Request) {
       hora_revisao: body.hora_revisao || null,
     };
 
-    // Remove o ID do payload se vier vazio/indefinido para deixar a sequence/UUID do Supabase gerar
+    // Remove ID do payload caso venha vazio/falso para permitir que o banco gere automaticamente
     if (!payload.id) {
       delete payload.id;
     }

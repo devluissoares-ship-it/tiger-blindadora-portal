@@ -6,11 +6,11 @@ export async function POST(req: Request) {
 
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ 
-        text: "⚠️ Chave da API GROQ_API_KEY não configurada na Vercel." 
+        text: "⚠️ Chave GROQ_API_KEY não configurada nas variáveis de ambiente da Vercel." 
       });
     }
 
-    // Protection for optional fields
+    // Proteção com optional chaining para evitar estouro em propriedades nulas
     const isEntrada = cliente?.status === "Entrada" || cliente?.status === "Entrada e Vistoria Inicial";
     
     let contextoChecklist = "";
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: pergunta || "Gere uma atualização da fase atual." }
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       return NextResponse.json({ 
-        text: `⚠️ Erro na Groq: ${data?.error?.message || "Falha na comunicação com o modelo."}` 
+        text: `⚠️ Erro na Groq (${response.status}): ${data?.error?.message || "Falha ao processar requisição na API."}` 
       });
     }
 
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     return NextResponse.json({ 
-      text: `Erro na requisição: ${error?.message || "Verifique a conexão e tente novamente."}` 
+      text: `Erro na central de comando: ${error?.message || "Verifique os dados enviados e tente novamente."}` 
     });
   }
 }

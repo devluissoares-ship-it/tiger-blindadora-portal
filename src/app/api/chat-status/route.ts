@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       6. Direcionamento: Questões financeiras, comerciais ou de prazos contratuais complexos devem ser educadamente direcionadas para o nosso Canal de Atendimento Direto no WhatsApp: (11) 99134-3588.
     `;
 
-    // 3. Chamada da API Groq com checagem de resposta HTTP
+    // 3. Chamada da API Groq atualizada para llama-3.3-70b-versatile
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: pergunta || "Olá, gostaria de saber sobre o status do meu veículo." }
