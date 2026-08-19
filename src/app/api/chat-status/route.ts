@@ -2,7 +2,16 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    // 1. Tratamento seguro para parsing do corpo da requisição
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ 
+        text: "Sinto muito, não consegui processar os dados da sua requisição. Verifique as informações enviadas e tente novamente." 
+      });
+    }
+
     const { 
       nomeCliente = "Cliente", 
       status = "Em andamento", 
@@ -11,16 +20,16 @@ export async function POST(req: Request) {
       pergunta = "", 
       checklistEntrada, 
       fotosEntrada 
-    } = body;
+    } = body || {};
 
-    // 1. Validação defensiva da variável de ambiente
+    // 2. Validação defensiva da variável de ambiente
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ 
         text: `Sinto muito, ${nomeCliente}, a API da Groq não foi configurada corretamente nas variáveis de ambiente.` 
       });
     }
 
-    // 2. Proteção e montagem do contexto do checklist
+    // 3. Proteção e montagem do contexto do checklist
     const isEntrada = status === "Entrada" || status === "Entrada e Vistoria Inicial";
     
     let contextoChecklistCliente = "";
@@ -30,17 +39,18 @@ export async function POST(req: Request) {
       contextoChecklistCliente = `
       INFORMAÇÕES DA VISTORIA DE ENTRADA E CHECKLIST:
       - O veículo passou pela vistoria inicial com os seguintes status por setor:
-        • Lataria: ${checklistEntrada.lataria ? 'Inspecionado e OK' : (obs ? 'Inspecionado com apontamento/observação registrada' : 'Não verificado')}
-        • Vidros e Para-brisa: ${checklistEntrada.vidros_e_parabrisa ? 'Inspecionado e OK' : 'Inspecionado sem alterações'}
-        • Interior e Bancos: ${checklistEntrada.interior_e_bancos ? 'Inspecionado e OK' : 'Inspecionado sem alterações'}
-        • Painel e Quilometragem: ${checklistEntrada.painel_e_km ? 'Inspecionado e OK' : 'Inspecionado sem alterações'}
-        • Acessórios e Pertences: ${checklistEntrada.acessorios_e_pertences ? 'Inspecionado e OK' : 'Inspecionado sem alterações'}
+        • Lataria: ${checklistEntrada?.lataria ? 'Inspecionado e OK' : (obs ? 'Inspecionado com apontamento/observação registrada' : 'Não verificado')}
+        • Vidros e Para-brisa: ${checklistEntrada?.vidros_e_parabrisa ? 'Inspecionado e OK' : 'Inspecionado sem alterações'}
+        • Interior e Bancos: ${checklistEntrada?.interior_e_bancos ? 'Inspecionado e OK' : 'Inspecionado sem alterações'}
+        • Painel e Quilometragem: ${checklistEntrada?.painel_e_km ? 'Inspecionado e OK' : 'Inspecionado sem alterações'}
+        • Acessórios e Pertences: ${checklistEntrada?.acessorios_e_pertences ? 'Inspecionado e OK' : 'Inspecionado sem alterações'}
         • Observações Técnicas Registradas pela Equipe: ${obs || "Nenhuma observação extra registrada."}
       - Total de fotos da vistoria de entrada anexadas para conferência visual do cliente: ${fotosEntrada?.length || 0} fotos.
       - DIRETRIZ DE LEITURA DO CHECKLIST PARA A IA: Se houver observações descritas (ex: risco, detalhe na lataria), NUNCA diga que o item "não foi verificado". Explique com clareza profissional que o item foi inspecionado, que há um registro transparente (como um pequeno risco apontado na vistoria preventiva) e oriente o cliente a conferir as fotos de entrada anexadas no portal para tranquilizá-lo de que é apenas um mapeamento prévio de controle.
       `;
     }
 
+    // 4. System Prompt refinado
     const systemPrompt = `
       Você é a Consultora de Atendimento Técnico Oficial da Tiger Blindadora. Sua comunicação é impecável, acolhedora, extremamente profissional e voltada à engenharia de alta performance.
 
@@ -79,7 +89,7 @@ export async function POST(req: Request) {
       6. Direcionamento: Questões financeiras, comerciais ou de prazos contratuais complexos devem ser educadamente direcionadas para o nosso Canal de Atendimento Direto no WhatsApp: (11) 99134-3588.
     `;
 
-    // 3. Chamada da API Groq atualizada para llama-3.3-70b-versatile
+    // 5. Chamada para a API Groq com modelo atualizado
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -95,6 +105,13 @@ export async function POST(req: Request) {
         temperature: 0.3
       })
     });
+
+    // Tratamento específico de limite de cota / requisições
+    if (response.status === 429) {
+      return NextResponse.json({ 
+        text: `Sinto muito, ${nomeCliente}, nosso sistema de atendimento está com um volume elevado no momento. Por favor, aguarde alguns instantes e tente novamente.` 
+      });
+    }
 
     const data = await response.json();
 

@@ -15,12 +15,12 @@ export async function GET() {
   } catch (error: any) {
     console.error("Erro na API Clientes GET:", error);
     return NextResponse.json({ 
-      error: error?.message || "Erro interno ao buscar clientes" 
+      error: error?.message || "Erro interno ao buscar clientes." 
     }, { status: 500 });
   }
 }
 
-// POST: Salva um novo cliente com validação e suporte completo aos campos de checklist, fotos e revisões
+// POST: Salva um novo cliente com validação e suporte completo aos campos
 export async function POST(req: Request) {
   try {
     let body;
@@ -33,13 +33,13 @@ export async function POST(req: Request) {
     }
 
     // Validação mínima de segurança
-    if (!body?.nome) {
+    if (!body?.nome || typeof body.nome !== 'string' || !body.nome.trim()) {
       return NextResponse.json({ 
         error: "Dados incompletos: o nome do cliente é obrigatório." 
       }, { status: 400 });
     }
 
-    // Montagem do payload estruturado para garantir integridade com o Supabase
+    // Montagem do payload estruturado para garantir integridade no Supabase
     const payload = {
       ...body,
       status: body.status || "Entrada",
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       hora_revisao: body.hora_revisao || null,
     };
 
-    // Remove ID do payload caso venha vazio/falso para permitir que o banco gere automaticamente
+    // Remove ID do payload caso venha vazio/falso/inválido para permitir que o banco gere automaticamente (UUID ou Serial)
     if (!payload.id) {
       delete payload.id;
     }
@@ -74,7 +74,10 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, cliente: data }, { status: 201 });
+    // Unifica o retorno extraindo o primeiro elemento do array inserido
+    const clienteCriado = data && data.length > 0 ? data[0] : null;
+
+    return NextResponse.json({ success: true, cliente: clienteCriado }, { status: 201 });
   } catch (error: any) {
     console.error("Erro na API Clientes POST:", error);
     return NextResponse.json({ 

@@ -2,15 +2,26 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { cliente, pergunta } = await req.json();
+    // 1. Tratamento seguro para parsing do corpo da requisição
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ 
+        text: "⚠️ Requisição inválida: O corpo da mensagem está vazio ou em formato incorreto." 
+      });
+    }
 
+    const { cliente, pergunta } = body || {};
+
+    // 2. Validação da chave de API
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ 
         text: "⚠️ Chave GROQ_API_KEY não configurada nas variáveis de ambiente da Vercel." 
       });
     }
 
-    // Proteção com optional chaining para evitar estouro em propriedades nulas
+    // 3. Montagem do contexto do checklist com proteção nula
     const isEntrada = cliente?.status === "Entrada" || cliente?.status === "Entrada e Vistoria Inicial";
     
     let contextoChecklist = "";
@@ -32,6 +43,7 @@ export async function POST(req: Request) {
       `;
     }
 
+    // 4. Prompt do Sistema para o Assistente do Admin
     const systemPrompt = `
       Você é o Gerente Geral e Consultor Técnico Oficial da TIGER BLINDADORA. 
       Sua missão é auxiliar o Administrador na gestão técnica e comercial, redigindo mensagens prontas, profissionais e humanizadas para envio via WhatsApp aos clientes.
@@ -78,6 +90,7 @@ export async function POST(req: Request) {
       4. COMPLIANCE: Sempre cite as normas do Exército Brasileiro (EB) em questões de rigidez balística.
     `;
 
+    // 5. Chamada para a API da Groq (Modelo homologado llama-3.1-70b-versatile)
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -85,7 +98,7 @@ export async function POST(req: Request) {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "llama-3.1-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: pergunta || "Gere uma atualização da fase atual." }
@@ -96,7 +109,7 @@ export async function POST(req: Request) {
 
     if (response.status === 429) {
       return NextResponse.json({ 
-        text: "⚠️ Calma aí, comandante! O fluxo de processamento atingiu o limite temporário. Aguarde 30 segundos e tente novamente." 
+        text: "⚠️ O fluxo de processamento atingiu o limite temporário. Aguarde 30 segundos e tente novamente." 
       });
     }
 
@@ -111,6 +124,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ text: data.choices[0].message.content });
 
   } catch (error: any) {
+    console.error("Erro na rota admin-ai:", error);
     return NextResponse.json({ 
       text: `Erro na central de comando: ${error?.message || "Verifique os dados enviados e tente novamente."}` 
     });

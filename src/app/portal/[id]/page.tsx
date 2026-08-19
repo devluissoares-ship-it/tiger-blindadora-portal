@@ -33,7 +33,7 @@ export default function PortalPage() {
     playSound('click');
     
     try {
-      const res = await fetch('/api/chat-status', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
