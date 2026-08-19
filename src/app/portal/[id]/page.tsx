@@ -6,26 +6,44 @@ import { supabase } from "@/lib/supabase";
 import { Loader2, Sparkles, Phone, Send, ClipboardCheck, CheckSquare } from 'lucide-react';
 
 export default function PortalPage() {
-  const { id } = useParams();
+  const params = useParams();
   const [cliente, setCliente] = useState<any>(null);
   const [pergunta, setPergunta] = useState("");
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Função para tocar sons modernos
+  // Função para tocar sons modernos com proteção contra erro de autoplay
   const playSound = (type: 'click' | 'notification') => {
-    const audio = new Audio(type === 'click' ? '/clickbuton.mp3' : '/notification.mp3');
-    audio.play().catch(() => {});
+    try {
+      const audio = new Audio(type === 'click' ? '/clickbuton.mp3' : '/notification.mp3');
+      audio.play().catch(() => {});
+    } catch {
+      // Ignora erro de áudio se o navegador bloquear autoplay
+    }
   };
 
   useEffect(() => {
-    if (!id) return;
+    setMounted(true);
+    const rawId = params?.id;
+    if (!rawId) return;
+    
     const fetchCliente = async () => {
-      const { data } = await supabase.from('clientes').select('*').eq('id', decodeURIComponent(id as string)).single();
-      setCliente(data);
+      const idString = Array.isArray(rawId) ? rawId[0] : rawId;
+      const idDecodificado = decodeURIComponent(idString);
+      
+      const { data } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('id', idDecodificado)
+        .single();
+        
+      if (data) {
+        setCliente(data);
+      }
     };
     fetchCliente();
-  }, [id]);
+  }, [params]);
 
   const enviarParaIA = async (tipo: 'etapa' | 'pergunta', texto?: string) => {
     if (!cliente) return;
@@ -37,23 +55,30 @@ export default function PortalPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            nomeCliente: cliente.nome, 
-            status: cliente.status, 
-            veiculo: cliente.veiculo,
-            progresso: cliente.progresso,
-            pergunta: tipo === 'etapa' ? "Explique a etapa atual" : texto,
-            checklistEntrada: cliente.checklist_entrada,
-            fotosEntrada: cliente.fotos_entrada
+          nomeCliente: cliente.nome, 
+          status: cliente.status, 
+          veiculo: cliente.veiculo,
+          progresso: cliente.progresso,
+          pergunta: tipo === 'etapa' ? "Explique a etapa atual" : texto,
+          checklistEntrada: cliente.checklist_entrada,
+          fotosEntrada: cliente.fotos_entrada
         })
       });
+      
       const data = await res.json();
-      setResposta(data.text);
+      setResposta(data.text || "Sinto muito, fale com nossa equipe via WhatsApp.");
+      
+      if (tipo === 'pergunta') {
+        setPergunta("");
+      }
     } catch { 
       setResposta("Sinto muito, fale com nossa equipe via WhatsApp."); 
     } finally { 
       setLoading(false); 
     }
   };
+
+  if (!mounted) return null;
 
   if (!cliente) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -80,12 +105,12 @@ export default function PortalPage() {
               Etapa Atual: {cliente.status}
             </h2>
             <div className="w-full bg-black h-4 rounded-full border border-[#222] overflow-hidden">
-                <div className="bg-orange-500 h-full transition-all duration-1000" style={{ width: `${cliente.progresso}%` }} />
+              <div className="bg-orange-500 h-full transition-all duration-1000" style={{ width: `${cliente.progresso}%` }} />
             </div>
             <p className="mt-2 font-bold text-lg">{cliente.progresso}% de conclusão</p>
           </div>
 
-          {/* CHECKLIST E VISTORIA DE ENTRADA (Exibido de forma transparente para o cliente) */}
+          {/* CHECKLIST E VISTORIA DE ENTRADA */}
           {cliente.checklist_entrada && (
             <div className="bg-[#0a0a0a] p-8 rounded-[2rem] border border-[#222]">
               <div className="flex items-center gap-3 mb-6 text-orange-500">
@@ -128,7 +153,7 @@ export default function PortalPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {cliente.fotos_entrada.map((fotoUrl: string, i: number) => (
                       <div key={i} className="bg-black p-3 rounded-2xl border border-[#222]">
-                        <img src={fotoUrl} className="w-full h-32 object-cover rounded-xl" alt="Vistoria Entrada" />
+                        <img src={fotoUrl} className="w-full h-32 object-cover rounded-xl" alt={`Vistoria Entrada ${i + 1}`} />
                       </div>
                     ))}
                   </div>
@@ -137,12 +162,12 @@ export default function PortalPage() {
             </div>
           )}
 
-          {/* HISTÓRICO FOTOGRÁFICO DE EVOLUÇÃO (Com o Título/Nome da Fase Embaixo) */}
+          {/* HISTÓRICO FOTOGRÁFICO DE EVOLUÇÃO */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {cliente.historico_fotos?.map((f: any, i: number) => (
               <div key={i} className="bg-[#0a0a0a] rounded-[2rem] border border-[#222] hover:border-orange-500/50 transition overflow-hidden flex flex-col shadow-lg">
                 <div className="w-full h-48 bg-black overflow-hidden">
-                  <img src={f.url} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt="Processo" />
+                  <img src={f.url} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt={f.titulo || f.etapa || "Atualização de processo"} />
                 </div>
                 
                 {/* Nome/Rótulo da Etapa Exatamente Embaixo da Imagem */}
@@ -166,30 +191,42 @@ export default function PortalPage() {
             <h3 className="font-bold">Consultor IA Tiger</h3>
           </div>
           
-          <button onClick={() => enviarParaIA('etapa')} className="w-full bg-orange-500 text-black font-bold py-4 rounded-2xl mb-4 hover:bg-white transition-all">
+          <button 
+            onClick={() => enviarParaIA('etapa')} 
+            disabled={loading}
+            className="w-full bg-orange-500 text-black font-bold py-4 rounded-2xl mb-4 hover:bg-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin text-black" /> : null}
             {loading ? "Processando..." : "EXPLICAR ETAPA ATUAL"}
           </button>
           
           <div className="relative mb-4">
             <input 
-              className="w-full bg-[#111] border border-[#222] p-4 rounded-2xl text-white outline-none focus:border-orange-500" 
+              className="w-full bg-[#111] border border-[#222] p-4 pr-12 rounded-2xl text-white outline-none focus:border-orange-500 transition" 
               placeholder="Alguma dúvida específica?" 
               value={pergunta} 
-              onChange={(e) => setPergunta(e.target.value)} 
+              onChange={(e) => setPergunta(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && pergunta.trim() && enviarParaIA('pergunta', pergunta)}
             />
-            <button onClick={() => enviarParaIA('pergunta', pergunta)} className="absolute right-2 top-2 p-3 bg-orange-500 rounded-xl hover:bg-white transition">
+            <button 
+              onClick={() => pergunta.trim() && enviarParaIA('pergunta', pergunta)} 
+              disabled={loading || !pergunta.trim()}
+              className="absolute right-2 top-2 p-3 bg-orange-500 rounded-xl hover:bg-white transition disabled:opacity-50"
+            >
               <Send size={18} className="text-black"/>
             </button>
           </div>
 
           {resposta && (
-            <div className="p-4 bg-[#111] rounded-2xl border border-[#222] text-sm text-gray-300 italic mb-4 animate-in fade-in">
+            <div className="p-4 bg-[#111] rounded-2xl border border-[#222] text-sm text-gray-300 italic mb-4 animate-in fade-in leading-relaxed">
               {resposta}
             </div>
           )}
 
-          <button onClick={() => { playSound('notification'); window.open('https://wa.me/5511991343588'); }} 
-            className="w-full bg-[#222] py-4 rounded-2xl hover:bg-orange-500 font-bold flex justify-center gap-2 items-center transition">
+          <button 
+            onClick={() => { playSound('notification'); window.open('https://wa.me/5511991343588'); }} 
+            className="w-full bg-[#222] py-4 rounded-2xl hover:bg-orange-500 hover:text-black font-bold flex justify-center gap-2 items-center transition"
+          >
             <Phone size={20} /> FALAR COM EQUIPE
           </button>
         </div>

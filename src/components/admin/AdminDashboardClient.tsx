@@ -31,7 +31,8 @@ export const AdminDashboardClient = ({ initialClientes }: { initialClientes: Cli
     { num: 9, label: "ENTREGA" }
   ];
 
-  const converterStatusParaNumero = (status: string | undefined) => {
+  // Permite null vindo do Supabase/API sem estourar exceção
+  const converterStatusParaNumero = (status: string | null | undefined) => {
     const mapa: Record<string, number> = {
       "Entrada": 1, "Desmontagem": 2, "Estrutura": 3, "Portas": 4, 
       "Vidros": 5, "Acabamento": 6, "Testes": 7, "Finalização": 8, "Entrega": 9, "Revisões": 10
@@ -89,7 +90,7 @@ export const AdminDashboardClient = ({ initialClientes }: { initialClientes: Cli
         }
       `}</style>
 
-      {/* Barra Superior de Seleção e Ações (Com foco na cor da marca) */}
+      {/* Barra Superior de Seleção e Ações */}
       <div className="flex flex-col sm:flex-row gap-4">
         <select 
           value={clienteId}
@@ -118,7 +119,7 @@ export const AdminDashboardClient = ({ initialClientes }: { initialClientes: Cli
         {/* Coluna Esquerda (Conteúdo Geral) */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* LINHA DE PRODUÇÃO CUSTOMIZADA (1 ao 9 perfeitamente integrados e responsivos) */}
+          {/* LINHA DE PRODUÇÃO */}
           <div className="w-full bg-[#111] p-6 rounded-2xl border border-[#222] shadow-sm">
             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-4 text-center">Linha de Produção - Status do Veículo</p>
             <div className="flex items-center justify-between relative overflow-x-auto py-2">
@@ -150,7 +151,7 @@ export const AdminDashboardClient = ({ initialClientes }: { initialClientes: Cli
             </div>
           </div>
 
-          {/* CHECKLIST E VISTORIA DE ENTRADA (Sempre visível em qualquer etapa) */}
+          {/* CHECKLIST E VISTORIA DE ENTRADA */}
           <div className="bg-[#111] p-6 rounded-2xl border border-orange-500/40 shadow-xl shadow-orange-500/5 space-y-4">
             <div className="flex items-center justify-between border-b border-[#222] pb-3">
               <h3 className="text-orange-500 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
@@ -293,7 +294,7 @@ export const AdminDashboardClient = ({ initialClientes }: { initialClientes: Cli
           </div>
         </div>
         
-        {/* Coluna Direita (PAINEL DA IA - Com scroll customizado e limpo) */}
+        {/* Coluna Direita (PAINEL DA IA) */}
         <div className="space-y-6 lg:sticky lg:top-6">
           <div className="bg-[#111] rounded-2xl border border-[#222] shadow-xl overflow-hidden">
             <AdminAIAssistant cliente={cliente} />

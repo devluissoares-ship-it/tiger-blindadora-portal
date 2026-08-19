@@ -7,7 +7,7 @@ import { LogOut, Send, Loader2, Info, CheckSquare, ClipboardCheck } from 'lucide
 import { Cliente } from "@/types/cliente";
 
 export default function DashboardCliente() {
-  const { id } = useParams();
+  const params = useParams();
   const router = useRouter();
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [resposta, setResposta] = useState("");
@@ -17,19 +17,23 @@ export default function DashboardCliente() {
 
   useEffect(() => {
     setMounted(true);
-    if (!id) return;
+    const rawId = params?.id;
+    if (!rawId) return;
     
     const fetchCliente = async () => {
+      const idDecodificado = decodeURIComponent(Array.isArray(rawId) ? rawId[0] : rawId);
       const { data, error } = await supabase
         .from('clientes')
         .select('*')
-        .eq('id', decodeURIComponent(id as string))
+        .eq('id', idDecodificado)
         .single();
 
-      if (!error && data) setCliente(data);
+      if (!error && data) {
+        setCliente(data);
+      }
     };
     fetchCliente();
-  }, [id]);
+  }, [params]);
 
   const handleConsultaIA = async (perguntaCustomizada?: string) => {
     if (!cliente) return;
@@ -54,7 +58,11 @@ export default function DashboardCliente() {
       
       const resData = await response.json();
       setResposta(resData.text || "Consulte seu consultor técnico diretamente.");
-    } catch (e) {
+      
+      if (perguntaCustomizada) {
+        setPergunta("");
+      }
+    } catch {
       setResposta("Erro ao consultar a rede Tiger Tech. Tente novamente.");
     } finally {
       setLoading(false);
@@ -69,31 +77,38 @@ export default function DashboardCliente() {
     </div>
   );
 
-  const isEntrada = cliente.status === "Entrada";
-
   return (
     <main className="min-h-screen bg-[#050505] text-white p-4 md:p-8">
+      {/* HEADER DA DASHBOARD */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#ff9500]">TIGER.</h1>
           <p className="text-gray-500 text-sm">{cliente.nome} | {cliente.veiculo}</p>
         </div>
-        <button onClick={() => router.push('/login-cliente')} className="text-gray-500 hover:text-white transition">
+        <button 
+          onClick={() => router.push('/login-cliente')} 
+          className="text-gray-500 hover:text-white transition flex items-center gap-1 text-sm p-2 rounded-lg hover:bg-[#111]"
+          title="Sair do Portal"
+        >
           <LogOut size={20} />
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          {/* BARRA DE PROGRESSO E STATUS */}
           <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
             <h2 className="text-xs font-bold uppercase tracking-widest text-[#ff9500] mb-4">Progresso: {cliente.progresso}%</h2>
             <div className="w-full bg-black h-3 rounded-full border border-[#222] overflow-hidden">
-              <div className="bg-[#ff9500] h-full transition-all duration-1000" style={{ width: `${cliente.progresso}%` }}></div>
+              <div 
+                className="bg-[#ff9500] h-full transition-all duration-1000" 
+                style={{ width: `${cliente.progresso}%` }}
+              ></div>
             </div>
             <p className="mt-4 text-sm">Etapa Atual: <span className="font-bold text-white">{cliente.status}</span></p>
           </div>
 
-          {/* EXIBIÇÃO DO CHECKLIST DE ENTRADA (Aparece apenas na fase de Entrada ou como histórico se houver dados) */}
+          {/* EXIBIÇÃO DO CHECKLIST DE ENTRADA */}
           {cliente.checklist_entrada && (
             <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
               <div className="flex items-center gap-2 mb-4 text-[#ff9500]">
@@ -135,7 +150,11 @@ export default function DashboardCliente() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {cliente.fotos_entrada.map((fotoUrl, i) => (
                       <div key={i} className="bg-black p-2 rounded-xl border border-[#222]">
-                        <img src={fotoUrl} className="w-full h-28 object-cover rounded-lg" alt="Vistoria Entrada" />
+                        <img 
+                          src={fotoUrl} 
+                          className="w-full h-28 object-cover rounded-lg" 
+                          alt={`Vistoria Entrada ${i + 1}`} 
+                        />
                       </div>
                     ))}
                   </div>
@@ -144,45 +163,67 @@ export default function DashboardCliente() {
             </div>
           )}
 
+          {/* REGISTRO FOTOGRÁFICO DE EVOLUÇÃO */}
           <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
             <h2 className="text-xs font-bold uppercase tracking-widest mb-4 text-[#ff9500]">Registro Fotográfico de Evolução</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {cliente.historico_fotos && cliente.historico_fotos.length > 0 ? (
                 cliente.historico_fotos.map((foto, i) => (
                   <div key={i} className="bg-black p-2 rounded-xl border border-[#222]">
-                    <img src={foto.url} className="w-full h-32 object-cover rounded-lg" alt="Progresso" />
-                    <p className="text-[10px] mt-2 text-gray-400">{foto.descricao}</p>
+                    <img 
+                      src={foto.url} 
+                      className="w-full h-32 object-cover rounded-lg" 
+                      alt={foto.descricao || `Foto de progresso ${i + 1}`} 
+                    />
+                    <p className="text-[10px] mt-2 text-gray-400 truncate">{foto.descricao}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-600 text-sm">Nenhuma foto de etapa disponível no momento.</p>
+                <p className="text-gray-600 text-sm col-span-2 md:col-span-3">Nenhuma foto de etapa disponível no momento.</p>
               )}
             </div>
           </div>
         </div>
 
+        {/* COLUNA LATERAL - CONSULTOR IA E DADOS DO VEÍCULO */}
         <div className="space-y-6">
           <div className="bg-[#111111] p-6 rounded-2xl border border-[#222]">
             <h2 className="font-bold text-[#ff9500] mb-4 text-sm uppercase">Consultor Técnico IA</h2>
-            <button onClick={() => handleConsultaIA()} className="w-full bg-[#ff9500] text-black font-bold py-3 rounded-lg hover:bg-white transition mb-4">
+            <button 
+              onClick={() => handleConsultaIA()} 
+              disabled={loading}
+              className="w-full bg-[#ff9500] text-black font-bold py-3 rounded-lg hover:bg-white transition mb-4 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 size={18} className="animate-spin" /> : null}
               {loading ? "Processando..." : "Explicar Etapa"}
             </button>
             <div className="flex gap-2">
               <input 
-                className="flex-1 bg-black border border-[#222] p-3 rounded-lg text-sm outline-none"
+                className="flex-1 bg-black border border-[#222] p-3 rounded-lg text-sm outline-none focus:border-[#ff9500] transition"
                 placeholder="Dúvida?"
                 value={pergunta}
                 onChange={(e) => setPergunta(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && pergunta.trim() && handleConsultaIA(pergunta)}
               />
-              <button onClick={() => handleConsultaIA(pergunta)} className="bg-[#222] px-4 rounded-lg hover:bg-[#ff9500] transition"><Send size={18} /></button>
+              <button 
+                onClick={() => pergunta.trim() && handleConsultaIA(pergunta)} 
+                disabled={loading || !pergunta.trim()}
+                className="bg-[#222] px-4 rounded-lg hover:bg-[#ff9500] hover:text-black transition disabled:opacity-50"
+              >
+                <Send size={18} />
+              </button>
             </div>
-            {resposta && <div className="mt-4 text-xs text-gray-300 p-4 bg-black rounded-lg border border-[#222]">{resposta}</div>}
+            {resposta && (
+              <div className="mt-4 text-xs text-gray-300 p-4 bg-black rounded-lg border border-[#222] leading-relaxed">
+                {resposta}
+              </div>
+            )}
           </div>
           
           <div className="bg-[#111111] p-6 rounded-2xl border border-[#222] text-sm text-gray-400 space-y-2">
-             <div className="flex items-center gap-2 text-[#ff9500]"><Info size={16}/> Dados do Veículo</div>
-             <p>Placa: <span className="text-white">{cliente.placa || "N/A"}</span></p>
-             <p>Blindagem: <span className="text-white">{cliente.nivel_blindagem || "III-A"}</span></p>
+             <div className="flex items-center gap-2 text-[#ff9500] font-bold"><Info size={16}/> Dados do Veículo</div>
+             <p>Placa: <span className="text-white font-medium">{cliente.placa || "N/A"}</span></p>
+             <p>Blindagem: <span className="text-white font-medium">{cliente.nivel_blindagem || "III-A"}</span></p>
           </div>
         </div>
       </div>

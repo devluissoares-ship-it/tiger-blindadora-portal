@@ -4,18 +4,21 @@
  */
 export async function gerarExplicacaoEtapa(pergunta: string, cliente: any, isUserAdmin: boolean = false): Promise<string> {
   try {
-    // 1. Estruturação do contexto (Separado para facilitar a manutenção do Prompt)
+    // 1. Estruturação do contexto completo alinhado com o banco e front-end
     const context = {
       cliente: cliente.nome,
       veiculo: cliente.modelo || cliente.veiculo,
-      blindagem: cliente.nivelBlindagem || 'Não especificada',
+      blindagem: cliente.nivelBlindagem || cliente.nivel_blindagem || 'Não especificada',
       status: cliente.status,
+      progresso: cliente.progresso || 0,
       revisao: {
         tipo: cliente.tipoRevisao || 'N/A',
         data: cliente.dataRevisao || 'N/A'
       },
       perfil: isUserAdmin ? 'ADMIN' : 'CLIENTE',
-      pergunta: pergunta
+      pergunta: pergunta,
+      checklistEntrada: cliente.checklist_entrada || null,
+      fotosEntrada: cliente.fotos_entrada || []
     };
 
     // 2. Chamada de rede otimizada
@@ -23,8 +26,9 @@ export async function gerarExplicacaoEtapa(pergunta: string, cliente: any, isUse
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        pergunta: pergunta,
         contexto: context,
-        historico: cliente.historicoEventos || []
+        historico: cliente.historicoEventos || cliente.historico_fotos || []
       })
     });
 
@@ -39,6 +43,6 @@ export async function gerarExplicacaoEtapa(pergunta: string, cliente: any, isUse
     console.error("Erro no processamento da IA Tiger:", error);
     
     // 3. Fallback inteligente (se a IA cair, o sistema responde com dados reais do objeto cliente)
-    return `Olá! Seu veículo (${cliente.modelo || cliente.veiculo}) encontra-se atualmente no status: ${cliente.status}. Caso precise de mais detalhes técnicos, nossa equipe está pronta para lhe atender.`;
+    return `Olá! Seu veículo (${cliente.modelo || cliente.veiculo}) encontra-se atualmente na etapa: ${cliente.status} (${cliente.progresso || 0}% concluído). Caso precise de mais detalhes técnicos, nossa equipe está pronta para lhe atender.`;
   }
 }

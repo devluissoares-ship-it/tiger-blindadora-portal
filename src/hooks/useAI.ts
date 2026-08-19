@@ -7,9 +7,13 @@ interface AIContext {
   nivelBlindagem?: string | null;
   tipoRevisao?: string | null;
   dataRevisao?: string | null;
+  progresso?: number;
+  nomeCliente?: string;
+  checklistEntrada?: any;
+  fotosEntrada?: any;
 }
 
-export const useAI = () => {
+export const useAI = (endpoint: string = '/api/chat-status') => {
   const [loading, setLoading] = useState(false);
 
   /**
@@ -21,12 +25,16 @@ export const useAI = () => {
     
     setLoading(true);
     try {
-      const response = await fetch('/api/chat-status', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pergunta,
-          // Limpamos o contexto para enviar apenas o que a IA precisa
+          nomeCliente: contexto.nomeCliente,
+          progresso: contexto.progresso,
+          checklistEntrada: contexto.checklistEntrada,
+          fotosEntrada: contexto.fotosEntrada,
+          // Mantém o mapeamento de contexto limpo
           contexto: {
             veiculo: contexto.veiculo,
             blindagem: contexto.nivelBlindagem || "Não especificado",
@@ -44,7 +52,6 @@ export const useAI = () => {
       
     } catch (error) {
       console.error("Falha na consulta:", error);
-      // Feedback amigável para manter o padrão profissional
       return "Prezado(a), o assistente técnico está temporariamente fora do ar. Nossa equipe humana já foi notificada para te atender!";
     } finally {
       setLoading(false);
