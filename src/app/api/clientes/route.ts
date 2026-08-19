@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabase } from "@/lib/supabase";
 
-// Força a rota a sempre buscar dados atualizados, sem cache estático no Next.js
+// Força a rota a sempre buscar dados atualizados
 export const dynamic = 'force-dynamic';
 
-// GET: Busca todos os clientes (Ordenados pelo mais recente)
+// GET: Busca todos os clientes
 export async function GET() {
   try {
     const { data, error } = await supabase
@@ -23,49 +23,31 @@ export async function GET() {
   }
 }
 
-// POST: Salva um novo cliente com validação e suporte completo aos campos
+// POST: Salva um novo cliente
 export async function POST(req: Request) {
   try {
     let body;
     try {
       body = await req.json();
     } catch {
-      return NextResponse.json({ 
-        error: "Corpo da requisição inválido ou JSON malformatado." 
-      }, { status: 400 });
+      return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
     }
 
-    // Validação mínima de segurança
-    if (!body?.nome || typeof body.nome !== 'string' || !body.nome.trim()) {
-      return NextResponse.json({ 
-        error: "Dados incompletos: o nome do cliente é obrigatório." 
-      }, { status: 400 });
+    if (!body?.nome?.trim()) {
+      return NextResponse.json({ error: "O nome do cliente é obrigatório." }, { status: 400 });
     }
 
-    // Estruturação do checklist padrão com fallback defensivo
-    const checklistPadrao = {
-      lataria: false,
-      vidros_e_parabrisa: false,
-      interior_e_bancos: false,
-      painel_e_km: false,
-      acessorios_e_pertences: false,
-      observacoes: ""
-    };
-
-    const checklistEntrada = body.checklist_entrada
-      ? { ...checklistPadrao, ...body.checklist_entrada }
-      : checklistPadrao;
-
-    // Montagem do payload estruturado
     const payload = {
-      ...body,
       nome: body.nome.trim(),
       veiculo: body.veiculo || body.modelo || "Veículo",
       status: body.status || "Entrada",
       progresso: Math.min(Math.max(Number(body.progresso) || 0, 0), 100),
       etapa_atual: Number(body.etapa_atual) || 1,
       nivel_blindagem: body.nivel_blindagem || "III-A",
-      checklist_entrada: checklistEntrada,
+      checklist_entrada: body.checklist_entrada || {
+        lataria: false, vidros_e_parabrisa: false, interior_e_bancos: false,
+        painel_e_km: false, acessorios_e_pertences: false, observacoes: ""
+      },
       fotos_entrada: Array.isArray(body.fotos_entrada) ? body.fotos_entrada : [],
       historico_fotos: Array.isArray(body.historico_fotos) ? body.historico_fotos : [],
       historico_eventos: Array.isArray(body.historico_eventos) ? body.historico_eventos : [],
@@ -74,10 +56,6 @@ export async function POST(req: Request) {
       hora_revisao: body.hora_revisao || null,
     };
 
-    // Limpeza de campos auto-gerados para evitar conflitos no Supabase
-    if (!payload.id) delete payload.id;
-    if (!payload.created_at) delete payload.created_at;
-
     const { data, error } = await supabase
       .from('clientes')
       .insert([payload])
@@ -85,43 +63,24 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
-    const clienteCriado = data && data.length > 0 ? data[0] : null;
-
-    return NextResponse.json({ success: true, cliente: clienteCriado }, { status: 201 });
+    return NextResponse.json({ success: true, cliente: data[0] }, { status: 201 });
   } catch (error: any) {
     console.error("Erro na API Clientes POST:", error);
-    return NextResponse.json({ 
-      error: error?.message || "Erro interno ao cadastrar cliente." 
-    }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Erro ao cadastrar." }, { status: 500 });
   }
 }
 
-// PUT: Atualiza os dados de um cliente existente
+// PUT: Atualiza cliente
 export async function PUT(req: Request) {
   try {
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ 
-        error: "Corpo da requisição inválido ou JSON malformatado." 
-      }, { status: 400 });
-    }
-
-    if (!body?.id) {
-      return NextResponse.json({ 
-        error: "ID do cliente é obrigatório para atualização." 
-      }, { status: 400 });
-    }
+    const body = await req.json();
+    if (!body?.id) return NextResponse.json({ error: "ID obrigatório." }, { status: 400 });
 
     const { id, created_at, ...dadosAtualizacao } = body;
 
-    // Ajuste defensivo dos valores numéricos se enviados
+    // Sanitização de valores numéricos
     if (dadosAtualizacao.progresso !== undefined) {
-      dadosAtualizacao.progresso = Math.min(Math.max(Number(dadosAtualizacao.progresso) || 0, 0), 100);
-    }
-    if (dadosAtualizacao.etapa_atual !== undefined) {
-      dadosAtualizacao.etapa_atual = Number(dadosAtualizacao.etapa_atual) || 1;
+      dadosAtualizacao.progresso = Math.min(Math.max(Number(dadosAtualizacao.progresso), 0), 100);
     }
 
     const { data, error } = await supabase
@@ -132,41 +91,28 @@ export async function PUT(req: Request) {
 
     if (error) throw error;
 
-    const clienteAtualizado = data && data.length > 0 ? data[0] : null;
-
-    return NextResponse.json({ success: true, cliente: clienteAtualizado }, { status: 200 });
+    return NextResponse.json({ success: true, cliente: data[0] }, { status: 200 });
   } catch (error: any) {
     console.error("Erro na API Clientes PUT:", error);
-    return NextResponse.json({ 
-      error: error?.message || "Erro interno ao atualizar cliente." 
-    }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Erro ao atualizar." }, { status: 500 });
   }
 }
 
-// DELETE: Remove um cliente pelo ID recebido via query param
+// DELETE: Remove cliente
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    if (!id) {
-      return NextResponse.json({ 
-        error: "ID do cliente é obrigatório para exclusão." 
-      }, { status: 400 });
-    }
+    if (!id) return NextResponse.json({ error: "ID obrigatório." }, { status: 400 });
 
-    const { error } = await supabase
-      .from('clientes')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('clientes').delete().eq('id', id);
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, message: "Cliente removido com sucesso." }, { status: 200 });
+    return NextResponse.json({ success: true, message: "Removido com sucesso." }, { status: 200 });
   } catch (error: any) {
     console.error("Erro na API Clientes DELETE:", error);
-    return NextResponse.json({ 
-      error: error?.message || "Erro interno ao excluir cliente." 
-    }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Erro ao excluir." }, { status: 500 });
   }
 }

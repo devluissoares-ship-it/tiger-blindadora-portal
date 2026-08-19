@@ -26,7 +26,6 @@ export async function POST(req: Request) {
 
     // 3. Montagem do contexto do checklist com proteção para valores nulos/indefinidos
     const statusAtual = cliente?.status || "Em andamento";
-    const isEntrada = statusAtual === "Entrada" || statusAtual === "Entrada e Vistoria Inicial";
     
     let contextoChecklist = "";
     if (cliente?.checklist_entrada) {
@@ -96,7 +95,7 @@ DIRETRIZES RÍGIDAS PARA A MENSAGEM AO CLIENTE:
    - Seja direto, objetivo e profissional.
 4. COMPLIANCE: Sempre cite o rigor de normas do Exército Brasileiro (EB) para homologação balística.`;
 
-    // 5. Chamada para a API Groq (llama-3.3-70b-versatile)
+    // 5. Chamada para a API Groq corrigida com o modelo ativo
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -104,7 +103,7 @@ DIRETRIZES RÍGIDAS PARA A MENSAGEM AO CLIENTE:
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "llama-3.1-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: pergunta || "Gere uma atualização profissional do status atual para envio via WhatsApp." }
