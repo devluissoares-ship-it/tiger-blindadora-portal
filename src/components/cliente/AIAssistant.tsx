@@ -30,12 +30,11 @@ export default function AIAssistant({ cliente, isUserAdmin = false }: AIAssistan
   }, []);
 
   const enviarParaIA = async (textoPersonalizado?: string) => {
-    const textoEnvio = textoPersonalizado || pergunta;
-    if (!textoEnvio.trim() || carregando) return;
+    const textoEnvio = textoPersonalizado || pergunta || "Poderia me dar mais informações sobre o processo?";
+    if (carregando) return;
 
     setCarregando(true);
     try {
-      // Ajuste o endpoint conforme suas rotas reais
       const endpoint = isUserAdmin ? '/api/admin-ai' : '/api/chat';
       
       const payload = isUserAdmin 
@@ -58,15 +57,13 @@ export default function AIAssistant({ cliente, isUserAdmin = false }: AIAssistan
 
       const data = await res.json();
       
-      if (!res.ok) {
-        throw new Error(data.message || 'Erro na resposta da API');
-      }
+      if (!res.ok) throw new Error(data.message || 'Erro na API');
 
       setResposta(data.text || "Sem resposta do servidor.");
       if (!textoPersonalizado) setPergunta("");
     } catch (error) {
-      console.error("Erro na comunicação com a IA:", error);
-      setResposta("Sinto muito, ocorreu um erro na comunicação com a inteligência artificial.");
+      console.error("Erro:", error);
+      setResposta("Sinto muito, ocorreu um erro na comunicação.");
     } finally {
       setCarregando(false);
     }
@@ -74,71 +71,29 @@ export default function AIAssistant({ cliente, isUserAdmin = false }: AIAssistan
 
   const dispararWhatsApp = () => {
     const tel = cliente?.telefone || cliente?.whatsapp;
-    if (!tel) {
-      alert("Telefone do cliente não cadastrado no sistema!");
-      return;
-    }
+    if (!tel) { alert("Telefone não cadastrado!"); return; }
     const telefone = tel.replace(/\D/g, '');
-    const link = `https://wa.me/55${telefone}?text=${encodeURIComponent(resposta)}`;
-    window.open(link, '_blank');
+    window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(resposta)}`, '_blank');
   };
 
-  if (!isReady) {
-    return (
-      <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-[#222] flex items-center justify-center min-h-[200px]">
-        <Loader2 className="animate-spin text-orange-500" size={24} />
-      </div>
-    );
-  }
-
-  const isEntrada = cliente?.status === "Entrada";
+  if (!isReady) return <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-[#222] flex items-center justify-center min-h-[200px]"><Loader2 className="animate-spin text-orange-500" size={24} /></div>;
 
   return (
     <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-[#222] shadow-xl flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Bot className={isUserAdmin ? "text-blue-500 animate-pulse" : "text-orange-500 animate-pulse"} size={20} />
-          <h3 className="font-bold text-white uppercase text-xs tracking-widest">
-            {isUserAdmin ? "Painel Admin IA" : "Consultor IA Tiger"}
-          </h3>
+          <h3 className="font-bold text-white uppercase text-xs tracking-widest">{isUserAdmin ? "Painel Admin IA" : "Consultor IA Tiger"}</h3>
         </div>
-        {cliente?.status && (
-          <span className="text-[10px] bg-[#111] border border-[#222] px-2.5 py-1 rounded-full text-orange-500 font-bold">
-            {cliente.status}
-          </span>
-        )}
       </div>
-
-      {isUserAdmin && (
-        <div className="mb-4 flex gap-2 flex-wrap">
-          {isEntrada ? (
-            <button 
-              onClick={() => enviarParaIA("Gere uma mensagem amigável informando que o veículo deu entrada na Tiger, mencionando que a vistoria e checklist inicial foram concluídos com sucesso.")}
-              disabled={carregando}
-              className="text-[11px] bg-[#111] border border-[#222] hover:border-orange-500 text-gray-300 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition disabled:opacity-50"
-            >
-              <Sparkles size={12} className="text-orange-500" /> Msg de Entrada + Checklist
-            </button>
-          ) : (
-            <button 
-              onClick={() => enviarParaIA(`Gere uma atualização profissional informando que o veículo avançou para a etapa de ${cliente?.status} (${cliente?.progresso}% concluído).`)}
-              disabled={carregando}
-              className="text-[11px] bg-[#111] border border-[#222] hover:border-orange-500 text-gray-300 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition disabled:opacity-50"
-            >
-              <Sparkles size={12} className="text-orange-500" /> Atualizar Fase Atual
-            </button>
-          )}
-        </div>
-      )}
 
       {!isUserAdmin && (
         <button 
-          onClick={() => enviarParaIA("Explique a etapa atual")}
+          onClick={() => enviarParaIA("Explique detalhadamente a etapa atual do veículo.")}
           disabled={carregando}
           className="w-full bg-orange-500 text-black font-bold py-3 rounded-xl mb-4 hover:bg-white transition-all text-xs tracking-wider disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {carregando ? <Loader2 size={16} className="animate-spin text-black" /> : null}
-          {carregando ? "Processando..." : "EXPLICAR ETAPA ATUAL"}
+          {carregando ? <Loader2 size={16} className="animate-spin text-black" /> : "EXPLICAR ETAPA ATUAL"}
         </button>
       )}
 
@@ -147,10 +102,7 @@ export default function AIAssistant({ cliente, isUserAdmin = false }: AIAssistan
           <div className="bg-[#111] p-4 rounded-xl border border-[#222] text-gray-300 text-sm whitespace-pre-line leading-relaxed">
             <p className="mb-4">{resposta}</p>
             {isUserAdmin && (
-              <button 
-                onClick={dispararWhatsApp}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg"
-              >
+              <button onClick={dispararWhatsApp} className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition">
                 <MessageCircle size={16} /> DISPARAR NO WHATSAPP
               </button>
             )}
@@ -162,17 +114,15 @@ export default function AIAssistant({ cliente, isUserAdmin = false }: AIAssistan
         <input 
           value={pergunta}
           onChange={(e) => setPergunta(e.target.value)}
-          placeholder={isUserAdmin ? "Ex: Gere uma atualização para o cliente..." : "Alguma dúvida específica?"}
+          placeholder="Alguma dúvida?"
           className="flex-1 bg-[#111] border border-[#222] p-3 rounded-xl text-white text-sm outline-none focus:border-orange-500"
           onKeyDown={(e) => e.key === 'Enter' && enviarParaIA()}
           disabled={carregando}
         />
         <button 
           onClick={() => enviarParaIA()}
-          disabled={carregando || !pergunta.trim()}
-          className={`p-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center min-w-[48px] ${
-            isUserAdmin ? 'bg-orange-500 hover:bg-orange-600 text-black' : 'bg-orange-500 hover:bg-white text-black'
-          }`}
+          disabled={carregando}
+          className="p-3 bg-orange-500 rounded-xl hover:bg-white text-black transition disabled:opacity-50"
         >
           {carregando ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
         </button>
