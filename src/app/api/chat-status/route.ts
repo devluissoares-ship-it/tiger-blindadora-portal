@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Chamada para a API da Groq com o modelo atualizado e suporte a histórico
+    // 4. Chamada para a API da Groq com o modelo atualizado (openai/gpt-oss-120b) e suporte a histórico
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         messages: [
           { role: "system", content: "Você é o assistente técnico da Tiger Blindadora, especializado em engenharia de alta performance e conformidade balística." },
           ...(Array.isArray(historico) ? historico : []), // Garante que o histórico seja um array válido

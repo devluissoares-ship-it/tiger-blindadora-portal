@@ -95,7 +95,7 @@ DIRETRIZES RÍGIDAS PARA A MENSAGEM AO CLIENTE:
    - Seja direto, objetivo e profissional.
 4. COMPLIANCE: Sempre cite o rigor de normas do Exército Brasileiro (EB) para homologação balística.`;
 
-    // 5. Chamada para a API Groq com o modelo correto e suporte a histórico + system prompt
+    // 5. Chamada para a API Groq com o modelo atualizado (openai/gpt-oss-120b) + suporte a histórico + system prompt
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -103,7 +103,7 @@ DIRETRIZES RÍGIDAS PARA A MENSAGEM AO CLIENTE:
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         messages: [
           { role: "system", content: systemPrompt },
           ...(Array.isArray(historico) ? historico : []),
