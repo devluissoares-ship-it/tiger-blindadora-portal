@@ -13,6 +13,7 @@ export default function PortalPage() {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Função para tocar sons modernos com proteção contra erro de autoplay
   const playSound = (type: 'click' | 'notification') => {
     try {
       const audio = new Audio(type === 'click' ? '/clickbuton.mp3' : '/notification.mp3');
@@ -44,25 +45,19 @@ export default function PortalPage() {
     fetchCliente();
   }, [params]);
 
-  const enviarParaIA = async (tipo: 'etapa' | 'pergunta', textoCustomizado?: string) => {
+  const enviarParaIA = async (tipo: 'etapa' | 'pergunta', texto?: string) => {
     if (!cliente) return;
     setLoading(true);
     playSound('click');
     
     try {
-      let statusParaEnviar = "";
-      if (tipo === 'etapa') {
-        statusParaEnviar = `Explique detalhadamente a etapa atual do veículo (${cliente.status}), lembrando que somos a Tiger Blindadora. O veículo do cliente ${cliente.nome} é um ${cliente.veiculo} e está em ${cliente.progresso}% de conclusão.`;
-      } else {
-        statusParaEnviar = `Dúvida do cliente ${cliente.nome} (${cliente.veiculo}) sobre a Tiger Blindadora: ${textoCustomizado}`;
-      }
-
+      // Rota ajustada para bater exatamente em /api/chat-status
       const res = await fetch('/api/chat-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           nomeCliente: cliente.nome, 
-          status: statusParaEnviar, 
+          status: tipo === 'etapa' ? cliente.status : `Dúvida: ${texto}`, 
           veiculo: cliente.veiculo,
           progresso: cliente.progresso,
           isUserAdmin: false,
@@ -175,6 +170,8 @@ export default function PortalPage() {
                 <div className="w-full h-48 bg-black overflow-hidden">
                   <img src={f.url} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt={f.titulo || f.etapa || "Atualização de processo"} />
                 </div>
+                
+                {/* Nome/Rótulo da Etapa Exatamente Embaixo da Imagem */}
                 <div className="p-4 bg-black/90 border-t border-[#222] text-center">
                   <h4 className="font-extrabold text-orange-400 uppercase tracking-widest text-xs">
                     {f.titulo || f.etapa || "Atualização"}
