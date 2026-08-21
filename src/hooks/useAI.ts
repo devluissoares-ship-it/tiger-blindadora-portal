@@ -16,12 +16,9 @@ interface AIContext {
 export const useAI = (endpoint: string = '/api/chat-status') => {
   const [loading, setLoading] = useState(false);
 
-  /**
-   * Hook de IA otimizado para o Dashboard Tiger.
-   * Garante que o contexto enviado seja limpo e estruturado.
-   */
   const askAI = async (pergunta?: string, contexto?: AIContext): Promise<string> => {
-    const textoFinal = pergunta?.trim() || "Explique detalhadamente a etapa atual do veículo.";
+    // Se o usuário não digitou nada (clicou no botão), criamos um comando ultra-direto e específico
+    const textoFinal = pergunta?.trim() || `Explique de forma bem resumida, educada e direta ao ponto a fase atual ("${contexto?.status || "Em andamento"}") do veículo ${contexto?.veiculo || "veículo"} (${contexto?.progresso || 0}% concluído), citando os itens do checklist de entrada de forma limpa e sem tabelas.`;
     
     setLoading(true);
     try {
@@ -34,7 +31,6 @@ export const useAI = (endpoint: string = '/api/chat-status') => {
           progresso: contexto?.progresso,
           checklistEntrada: contexto?.checklistEntrada,
           fotosEntrada: contexto?.fotosEntrada,
-          // Mantém o mapeamento de contexto limpo
           contexto: {
             veiculo: contexto?.veiculo || "Não especificado",
             blindagem: contexto?.nivelBlindagem || "Não especificado",

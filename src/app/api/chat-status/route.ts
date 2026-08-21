@@ -7,22 +7,12 @@ export async function POST(req: Request) {
       body = await req.json();
     } catch {
       return NextResponse.json(
-        { text: "⚠️ Requisição inválida: O corpo da mensagem está vazio ou em formato incorreto." },
+        { text: "⚠️ Requisição inválida: O corpo da mensagem está vazio." },
         { status: 400 }
       );
     }
 
-    // Extrai todas as variações possíveis de nomes de campos enviados pelo frontend
-    const { 
-      pergunta, 
-      historico, 
-      nomeCliente, 
-      status, 
-      etapa, 
-      veiculo, 
-      progresso, 
-      chatId 
-    } = body || {};
+    const { pergunta, historico, nomeCliente, progresso, contexto } = body || {};
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
@@ -32,12 +22,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // Cria o texto final independentemente de qual campo o frontend usou
-    let textoFinal = pergunta;
-    if (!textoFinal) {
-      const faseAtual = status || etapa || "Andamento";
-      textoFinal = `Explique de forma clara para o cliente ${nomeCliente || chatId || "Cliente"} o que significa a etapa atual do veículo ${veiculo || "veículo"}. O carro está na fase "${faseAtual}" com ${progresso || 0}% de conclusão na Tiger Blindadora.`;
-    }
+    const clienteNome = nomeCliente || "Cliente";
+    const veiculoNome = contexto?.veiculo || "veículo";
+    const statusAtual = contexto?.status || "Andamento";
+    const progressoAtual = progresso || 0;
+
+    // Define o prompt enviado para a IA
+    const textoFinal = pergunta || `Explique de forma curta e educada para o cliente ${clienteNome} a etapa atual "${statusAtual}" do veículo ${veiculoNome} (${progressoAtual}% concluído).`;
+
+    const systemInstruction = `Você é o assistente técnico oficial da Tiger Blindadora. 
+REGRAS OBRIGATÓRIAS:
+1. Seja sempre cordial e chame o cliente pelo nome.
+2. NUNCA utilize tabelas em Markdown (proibido usar '|' ou linhas divisórias).
+3. Seja direto ao ponto: dê uma resposta limpa, resumida e elegante, evitando blocos de texto gigantescos.
+4. Explique a etapa ou o checklist de entrada de forma fluida usando parágrafos curtos.`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -48,7 +46,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: "openai/gpt-oss-120b",
         messages: [
-          { role: "system", content: "Você é o assistente técnico oficial da Tiger Blindadora, especializado em engenharia de alta performance e conformidade balística. Seja cordial, técnico e direto ao ponto." },
+          { role: "system", content: systemInstruction },
           ...(Array.isArray(historico) ? historico : []),
           { role: "user", content: textoFinal }
         ],
@@ -58,7 +56,7 @@ export async function POST(req: Request) {
 
     if (response.status === 429) {
       return NextResponse.json(
-        { text: "⚠️ O limite temporário de requisições foi atingido. Aguarde alguns segundos e tente novamente." },
+        { text: "⚠️ Muitas requisições no momento. Aguarde alguns segundos." },
         { status: 429 }
       );
     }
@@ -67,7 +65,7 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { text: `⚠️ Erro na API Groq (${response.status}): ${data?.error?.message || "Falha ao processar a resposta."}` },
+        { text: `⚠️ Erro na comunicação com a IA: ${data?.error?.message || "Tente novamente."}` },
         { status: response.status }
       );
     }
@@ -76,7 +74,7 @@ export async function POST(req: Request) {
 
     if (!respostaTexto) {
       return NextResponse.json(
-        { text: "⚠️ A IA não retornou um conteúdo válido. Tente novamente." },
+        { text: "⚠️ A IA não retornou um conteúdo válido." },
         { status: 500 }
       );
     }
@@ -86,7 +84,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Erro na API de Chat:", error);
     return NextResponse.json(
-      { text: `⚠️ Erro interno na central de comando: ${error?.message || "Erro desconhecido."}` },
+      { text: `⚠️ Erro interno na central de comando.` },
       { status: 500 }
     );
   }
