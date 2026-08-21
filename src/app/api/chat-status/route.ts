@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    // 1. Parsing seguro do corpo da requisição para evitar quebras de JSON vazio
     let body;
     try {
       body = await req.json();
@@ -13,9 +12,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const { pergunta, historico } = body || {};
+    const { pergunta, historico, nomeCliente, status, veiculo, progresso } = body || {};
 
-    // 2. Validação da chave de API da Groq nas variáveis de ambiente
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -24,15 +22,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Validação se a pergunta foi enviada
-    if (!pergunta) {
-      return NextResponse.json(
-        { text: "⚠️ O campo 'pergunta' é obrigatório." },
-        { status: 400 }
-      );
+    // Monta a instrução de forma inteligente com base no que o usuário fez
+    let textoFinal = pergunta;
+    if (!textoFinal) {
+      // Se clicou em "Explicar Etapa Atual", gera o prompt automático do status atual
+      textoFinal = `Explique de forma clara, profissional e acolhedora para o cliente ${nomeCliente || "Cliente"} o que está acontecendo na etapa atual do veículo ${veiculo || "veículo"}. O carro está na fase "${status || "Em andamento"}" com ${progresso || 0}% de conclusão do processo na Tiger Blindadora.`;
     }
 
-    // 4. Chamada para a API da Groq com o modelo atualizado (openai/gpt-oss-120b) e suporte a histórico
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -42,9 +38,9 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: "openai/gpt-oss-120b",
         messages: [
-          { role: "system", content: "Você é o assistente técnico da Tiger Blindadora, especializado em engenharia de alta performance e conformidade balística." },
-          ...(Array.isArray(historico) ? historico : []), // Garante que o histórico seja um array válido
-          { role: "user", content: pergunta }
+          { role: "system", content: "Você é o assistente técnico oficial da Tiger Blindadora, especializado em engenharia de alta performance e conformidade balística. Seja cordial, técnico e direto ao ponto." },
+          ...(Array.isArray(historico) ? historico : []),
+          { role: "user", content: textoFinal }
         ],
         temperature: 0.3
       })
@@ -78,7 +74,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ text: respostaTexto });
 
   } catch (error: any) {
-    console.error("Erro no Admin AI:", error);
+    console.error("Erro na API de Chat:", error);
     return NextResponse.json(
       { text: `⚠️ Erro interno na central de comando: ${error?.message || "Erro desconhecido."}` },
       { status: 500 }

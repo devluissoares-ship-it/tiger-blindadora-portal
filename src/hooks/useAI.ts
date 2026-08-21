@@ -20,8 +20,8 @@ export const useAI = (endpoint: string = '/api/chat-status') => {
    * Hook de IA otimizado para o Dashboard Tiger.
    * Garante que o contexto enviado seja limpo e estruturado.
    */
-  const askAI = async (pergunta: string, contexto: AIContext): Promise<string> => {
-    if (!pergunta.trim()) return "Por favor, digite uma dúvida válida.";
+  const askAI = async (pergunta?: string, contexto?: AIContext): Promise<string> => {
+    const textoFinal = pergunta?.trim() || "Explique detalhadamente a etapa atual do veículo.";
     
     setLoading(true);
     try {
@@ -29,18 +29,18 @@ export const useAI = (endpoint: string = '/api/chat-status') => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pergunta,
-          nomeCliente: contexto.nomeCliente,
-          progresso: contexto.progresso,
-          checklistEntrada: contexto.checklistEntrada,
-          fotosEntrada: contexto.fotosEntrada,
+          pergunta: textoFinal,
+          nomeCliente: contexto?.nomeCliente,
+          progresso: contexto?.progresso,
+          checklistEntrada: contexto?.checklistEntrada,
+          fotosEntrada: contexto?.fotosEntrada,
           // Mantém o mapeamento de contexto limpo
           contexto: {
-            veiculo: contexto.veiculo,
-            blindagem: contexto.nivelBlindagem || "Não especificado",
-            status: contexto.status,
-            revisao: contexto.tipoRevisao || "Não agendada",
-            data: contexto.dataRevisao || "N/A"
+            veiculo: contexto?.veiculo || "Não especificado",
+            blindagem: contexto?.nivelBlindagem || "Não especificado",
+            status: contexto?.status || "Não especificado",
+            revisao: contexto?.tipoRevisao || "Não agendada",
+            data: contexto?.dataRevisao || "N/A"
           }
         }),
       });

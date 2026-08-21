@@ -13,14 +13,11 @@ export default function PortalPage() {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Função para tocar sons modernos com proteção contra erro de autoplay
   const playSound = (type: 'click' | 'notification') => {
     try {
       const audio = new Audio(type === 'click' ? '/clickbuton.mp3' : '/notification.mp3');
       audio.play().catch(() => {});
-    } catch {
-      // Ignora erro de áudio se o navegador bloquear autoplay
-    }
+    } catch {}
   };
 
   useEffect(() => {
@@ -45,19 +42,20 @@ export default function PortalPage() {
     fetchCliente();
   }, [params]);
 
-  const enviarParaIA = async (tipo: 'etapa' | 'pergunta', texto?: string) => {
+  const enviarParaIA = async (tipo: 'etapa' | 'pergunta', textoCustomizado?: string) => {
     if (!cliente) return;
+    const textoFinal = textoCustomizado || pergunta || "Poderia me dar mais informações sobre o processo?";
+    
     setLoading(true);
     playSound('click');
     
     try {
-      // Rota ajustada para bater exatamente em /api/chat-status
       const res = await fetch('/api/chat-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           nomeCliente: cliente.nome, 
-          status: tipo === 'etapa' ? cliente.status : `Dúvida: ${texto}`, 
+          status: tipo === 'etapa' ? cliente.status : `Dúvida: ${textoFinal}`, 
           veiculo: cliente.veiculo,
           progresso: cliente.progresso,
           isUserAdmin: false,
@@ -170,8 +168,6 @@ export default function PortalPage() {
                 <div className="w-full h-48 bg-black overflow-hidden">
                   <img src={f.url} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt={f.titulo || f.etapa || "Atualização de processo"} />
                 </div>
-                
-                {/* Nome/Rótulo da Etapa Exatamente Embaixo da Imagem */}
                 <div className="p-4 bg-black/90 border-t border-[#222] text-center">
                   <h4 className="font-extrabold text-orange-400 uppercase tracking-widest text-xs">
                     {f.titulo || f.etapa || "Atualização"}
@@ -207,11 +203,15 @@ export default function PortalPage() {
               placeholder="Alguma dúvida específica?" 
               value={pergunta} 
               onChange={(e) => setPergunta(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && pergunta.trim() && enviarParaIA('pergunta', pergunta)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  enviarParaIA('pergunta', pergunta);
+                }
+              }}
             />
             <button 
-              onClick={() => pergunta.trim() && enviarParaIA('pergunta', pergunta)} 
-              disabled={loading || !pergunta.trim()}
+              onClick={() => enviarParaIA('pergunta', pergunta)} 
+              disabled={loading}
               className="absolute right-2 top-2 p-3 bg-orange-500 rounded-xl hover:bg-white transition disabled:opacity-50"
             >
               <Send size={18} className="text-black"/>
