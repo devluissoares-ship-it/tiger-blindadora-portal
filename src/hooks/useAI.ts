@@ -17,8 +17,8 @@ export const useAI = (endpoint: string = '/api/chat-status') => {
   const [loading, setLoading] = useState(false);
 
   const askAI = async (pergunta?: string, contexto?: AIContext): Promise<string> => {
-    // Se o usuário não digitou nada (clicou no botão), criamos um comando ultra-direto e específico
-    const textoFinal = pergunta?.trim() || `Explique de forma bem resumida, educada e direta ao ponto a fase atual ("${contexto?.status || "Em andamento"}") do veículo ${contexto?.veiculo || "veículo"} (${contexto?.progresso || 0}% concluído), citando os itens do checklist de entrada de forma limpa e sem tabelas.`;
+    // Se o usuário digitou algo no input, usa a pergunta dele. Se não, usa o comando padrão do botão.
+    const textoFinal = pergunta?.trim() || `Explique de forma bem resumida, educada e direta ao ponto a fase atual ("${contexto?.status || "Em andamento"}") do veículo ${contexto?.veiculo || "veículo"} (${contexto?.progresso || 0}% concluído), citando os dados do checklist de entrada de forma clara e sem tabelas.`;
     
     setLoading(true);
     try {

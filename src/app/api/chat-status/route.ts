@@ -27,23 +27,29 @@ export async function POST(req: Request) {
     const statusAtual = contexto?.status || "Desmontagem";
     const progressoAtual = progresso !== undefined ? progresso : 0;
 
-    // Converte o checklist em texto legível caso ele exista no payload
-    let checklistInfo = "";
+    // Organiza os dados do checklist de entrada para a IA conseguir explicar perfeitamente
+    let checklistInfo = "Nenhum detalhe extra informado.";
     if (checklistEntrada) {
       try {
         checklistInfo = typeof checklistEntrada === 'string' 
           ? checklistEntrada 
           : JSON.stringify(checklistEntrada, null, 2);
       } catch {
-        checklistInfo = "Checklist registrado no sistema.";
+        checklistInfo = "Checklist padrão registrado na entrada.";
       }
     }
 
-    const textoFinal = pergunta || `O veículo ${veiculoNome} está na etapa "${statusAtual}" (${progressoAtual}% concluído). Explique de forma muito curta, elegante e direta o que ocorre nesta etapa, siga estritamente a ordem oficial e, se houver perguntas sobre o checklist de entrada, utilize os dados informados.`;
+    const textoUsuario = pergunta || `Explique a etapa ${statusAtual} do veículo ${veiculoNome}.`;
 
-    // Instrução mestre idêntica à ordem do ProcessSteps.tsx do seu frontend
-    const systemInstruction = `Você é o assistente técnico oficial da Tiger Blindadora. 
-LISTA OFICIAL DE ETAPAS DO SISTEMA (Siga esta ordem sequencial exata, NUNca pule ou altere):
+    // Instrução mestre que garante flexibilidade para tirar dúvidas e explicar o checklist com precisão
+    const systemInstruction = `Você é o consultor técnico especialista oficial da Tiger Blindadora.
+CONTEXTO ATUAL DO VEÍCULO:
+- Cliente: ${clienteNome}
+- Veículo: ${veiculoNome}
+- Etapa Atual: ${statusAtual} (${progressoAtual}% de conclusão)
+- Dados do Checklist e Vistoria de Entrada: ${checklistInfo}
+
+MATRIZ OFICIAL DE ETAPAS DA TIGER (Para sua referência cronológica):
 1. Entrada
 2. Desmontagem
 3. Estrutura
@@ -53,17 +59,15 @@ LISTA OFICIAL DE ETAPAS DO SISTEMA (Siga esta ordem sequencial exata, NUNca pule
 7. Testes
 8. Finalização
 9. Entrega
+(As revisões periódicas ocorrem após a entrega: 6 meses, 10.000 km ou anual).
 
-DADOS DE CHECKLIST DE ENTRADA DISPONÍVEIS:
-${checklistInfo || "Nenhum checklist detalhado no momento."}
-
-REGRAS DE FORMATAÇÃO E CONDUTA:
-- Fale estritamente sobre a etapa atual informada (${statusAtual}). Aponte corretamente qual é a próxima etapa sequencial com base na lista oficial acima.
-- Se o usuário perguntar sobre o checklist de entrada, cite os dados informados acima de forma limpa.
-- Seja cordial, elegante e chame o cliente pelo nome. Mantenha a resposta curta e direta ao ponto.
-- PROIBIDO ABSOLUTAMENTE usar tabelas em Markdown (proibido usar barras verticais | ou traços |---|).
-- PROIBIDO usar excesso de hashtags (#) ou símbolos poluidores.
-- Termine sempre direcionando o cliente para a equipe de atendimento caso precise de mais suporte.`;
+DIRETRIZES DE ATENDIMENTO E DIÁLOGO:
+1. Seja flexível, inteligente e converse abertamente com o cliente. Se ele fizer uma pergunta específica sobre o carro, peças, prazos, tipos de blindagem ou sobre o checklist de entrada, responda com precisão técnica usando os dados fornecidos.
+2. Chame sempre o cliente pelo nome de forma cordial e elegante.
+3. Mantenha as respostas objetivas e em parágrafos fluidos ou listas simples (sem blocos gigantescos de texto).
+4. PROIBIDO ABSOLUTAMENTE usar tabelas em Markdown (proibido usar barras verticais | ou traços de tabela |---|).
+5. PROIBIDO usar excesso de hashtags (#) ou símbolos poluidores.
+6. Sempre encerre a resposta cordialmente, colocando-se à disposição e direcionando para a equipe de atendimento humano caso o cliente precise de um suporte mais aprofundado.`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -76,9 +80,9 @@ REGRAS DE FORMATAÇÃO E CONDUTA:
         messages: [
           { role: "system", content: systemInstruction },
           ...(Array.isArray(historico) ? historico : []),
-          { role: "user", content: textoFinal }
+          { role: "user", content: textoUsuario }
         ],
-        temperature: 0.1
+        temperature: 0.3 // Um pouco mais flexível para permitir um diálogo natural, mantendo o rigor técnico
       })
     });
 
