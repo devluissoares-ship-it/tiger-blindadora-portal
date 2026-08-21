@@ -24,18 +24,18 @@ export async function POST(req: Request) {
 
     const clienteNome = nomeCliente || "Cliente";
     const veiculoNome = contexto?.veiculo || "veículo";
-    const statusAtual = contexto?.status || "Andamento";
+    const statusAtual = contexto?.status || "Em andamento";
     const progressoAtual = progresso || 0;
 
-    // Define o prompt enviado para a IA
-    const textoFinal = pergunta || `Explique de forma curta e educada para o cliente ${clienteNome} a etapa atual "${statusAtual}" do veículo ${veiculoNome} (${progressoAtual}% concluído).`;
+    const textoFinal = pergunta || `Explique de forma muito resumida, elegante e direta para o cliente ${clienteNome} a etapa atual "${statusAtual}" do veículo ${veiculoNome} (${progressoAtual}% concluído).`;
 
     const systemInstruction = `Você é o assistente técnico oficial da Tiger Blindadora. 
-REGRAS OBRIGATÓRIAS:
-1. Seja sempre cordial e chame o cliente pelo nome.
-2. NUNCA utilize tabelas em Markdown (proibido usar '|' ou linhas divisórias).
-3. Seja direto ao ponto: dê uma resposta limpa, resumida e elegante, evitando blocos de texto gigantescos.
-4. Explique a etapa ou o checklist de entrada de forma fluida usando parágrafos curtos.`;
+REGRAS OBRIGATÓRIAS DE FORMATAÇÃO E ESTILO:
+1. Seja sempre cordial, elegante e chame o cliente pelo nome logo no início.
+2. PROIBIDO ABSOLUTAMENTE usar tabelas em Markdown (como linhas com barras verticais | ou traços |---|).
+3. PROIBIDO usar símbolos excessivos como hashtags (#) ou excesso de asteriscos. Mantenha a tipografia limpa.
+4. Seja conciso e direto ao ponto: dê uma resposta curta, focada em engenharia balística, sem blocos de texto gigantescos ou listas intermináveis.
+5. Termine sempre direcionando o cliente para a nossa equipe de atendimento caso ele precise de mais detalhes.`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
