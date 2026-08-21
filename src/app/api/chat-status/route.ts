@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { pergunta, historico, nomeCliente, progresso, contexto } = body || {};
+    const { pergunta, historico, nomeCliente, progresso, checklistEntrada, contexto } = body || {};
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
@@ -25,29 +25,45 @@ export async function POST(req: Request) {
     const clienteNome = nomeCliente || "Cliente";
     const veiculoNome = contexto?.veiculo || "veículo";
     const statusAtual = contexto?.status || "Desmontagem";
-    const progressoAtual = progresso || 20;
+    const progressoAtual = progresso !== undefined ? progresso : 0;
 
-    const textoFinal = pergunta || `Explique de forma curta, elegante e precisa para o cliente ${clienteNome} a etapa atual "${statusAtual}" do veículo ${veiculoNome} (${progressoAtual}% concluído). Diga o que está sendo feito agora e qual é estritamente a PRÓXIMA etapa do processo de acordo com a ordem oficial da Tiger.`;
+    // Converte o checklist em texto legível caso ele exista no payload
+    let checklistInfo = "";
+    if (checklistEntrada) {
+      try {
+        checklistInfo = typeof checklistEntrada === 'string' 
+          ? checklistEntrada 
+          : JSON.stringify(checklistEntrada, null, 2);
+      } catch {
+        checklistInfo = "Checklist registrado no sistema.";
+      }
+    }
 
-    // Instrução mestre atualizada com o fluxo cronológico exato e separado
+    const textoFinal = pergunta || `O veículo ${veiculoNome} está na etapa "${statusAtual}" (${progressoAtual}% concluído). Explique de forma muito curta, elegante e direta o que ocorre nesta etapa, siga estritamente a ordem oficial e, se houver perguntas sobre o checklist de entrada, utilize os dados informados.`;
+
+    // Instrução mestre idêntica à ordem do ProcessSteps.tsx do seu frontend
     const systemInstruction = `Você é o assistente técnico oficial da Tiger Blindadora. 
-FLUXO OFICIAL E CRONOLÓGICO DA BLINDAGEM (Siga esta ordem rigorosamente, NUNCA pule ou misture etapas):
-1. Vistoria e Checklist de Entrada
-2. Desmontagem (retirada de painéis, acabamentos e preparação)
-3. Estrutura (aplicação e reforço de aços balísticos e mantas nas colunas e chassi)
-4. Portas (blindagem, reforço de dobradiças e ajustes estruturais das portas)
-5. Vidros (instalação dos vidros balísticos certificados)
-6. Acabamento (recolocação de painéis internos, forros e chicotes elétricos)
-7. Testes (testes de infiltração, funcionamento e conformidade balística)
-8. Finalização e Entrega (revisão final, limpeza técnica e entrega ao cliente)
-9. Revisões Pós-Entrega (Manutenções periódicas: 6 meses, 10.000 km ou anual)
+LISTA OFICIAL DE ETAPAS DO SISTEMA (Siga esta ordem sequencial exata, NUNca pule ou altere):
+1. Entrada
+2. Desmontagem
+3. Estrutura
+4. Portas
+5. Vidros
+6. Acabamento
+7. Testes
+8. Finalização
+9. Entrega
 
-REGRAS DE FORMATAÇÃO OBRIGATÓRIAS:
-- Seja cordial e chame o cliente pelo nome.
-- NUNCA utilize tabelas em Markdown (proibido usar barras verticais |).
-- NUNCA use hashtags (#) em excesso ou símbolos poluidores.
-- Seja objetivo, técnico e elegante. Explique o que está acontecendo na etapa atual e aponte corretamente a PRÓXIMA fase de acordo com a lista oficial acima.
-- Termine direcionando para o atendimento humano se ele precisar de mais suporte.`;
+DADOS DE CHECKLIST DE ENTRADA DISPONÍVEIS:
+${checklistInfo || "Nenhum checklist detalhado no momento."}
+
+REGRAS DE FORMATAÇÃO E CONDUTA:
+- Fale estritamente sobre a etapa atual informada (${statusAtual}). Aponte corretamente qual é a próxima etapa sequencial com base na lista oficial acima.
+- Se o usuário perguntar sobre o checklist de entrada, cite os dados informados acima de forma limpa.
+- Seja cordial, elegante e chame o cliente pelo nome. Mantenha a resposta curta e direta ao ponto.
+- PROIBIDO ABSOLUTAMENTE usar tabelas em Markdown (proibido usar barras verticais | ou traços |---|).
+- PROIBIDO usar excesso de hashtags (#) ou símbolos poluidores.
+- Termine sempre direcionando o cliente para a equipe de atendimento caso precise de mais suporte.`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -62,7 +78,7 @@ REGRAS DE FORMATAÇÃO OBRIGATÓRIAS:
           ...(Array.isArray(historico) ? historico : []),
           { role: "user", content: textoFinal }
         ],
-        temperature: 0.2
+        temperature: 0.1
       })
     });
 
