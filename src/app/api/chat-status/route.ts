@@ -12,7 +12,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const { pergunta, historico, nomeCliente, status, veiculo, progresso } = body || {};
+    // Extrai todas as variações possíveis de nomes de campos enviados pelo frontend
+    const { 
+      pergunta, 
+      historico, 
+      nomeCliente, 
+      status, 
+      etapa, 
+      veiculo, 
+      progresso, 
+      chatId 
+    } = body || {};
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
@@ -22,11 +32,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Monta a instrução de forma inteligente com base no que o usuário fez
+    // Cria o texto final independentemente de qual campo o frontend usou
     let textoFinal = pergunta;
     if (!textoFinal) {
-      // Se clicou em "Explicar Etapa Atual", gera o prompt automático do status atual
-      textoFinal = `Explique de forma clara, profissional e acolhedora para o cliente ${nomeCliente || "Cliente"} o que está acontecendo na etapa atual do veículo ${veiculo || "veículo"}. O carro está na fase "${status || "Em andamento"}" com ${progresso || 0}% de conclusão do processo na Tiger Blindadora.`;
+      const faseAtual = status || etapa || "Andamento";
+      textoFinal = `Explique de forma clara para o cliente ${nomeCliente || chatId || "Cliente"} o que significa a etapa atual do veículo ${veiculo || "veículo"}. O carro está na fase "${faseAtual}" com ${progresso || 0}% de conclusão na Tiger Blindadora.`;
     }
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
