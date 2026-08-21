@@ -24,18 +24,30 @@ export async function POST(req: Request) {
 
     const clienteNome = nomeCliente || "Cliente";
     const veiculoNome = contexto?.veiculo || "veículo";
-    const statusAtual = contexto?.status || "Em andamento";
-    const progressoAtual = progresso || 0;
+    const statusAtual = contexto?.status || "Desmontagem";
+    const progressoAtual = progresso || 20;
 
-    const textoFinal = pergunta || `Explique de forma muito resumida, elegante e direta para o cliente ${clienteNome} a etapa atual "${statusAtual}" do veículo ${veiculoNome} (${progressoAtual}% concluído).`;
+    const textoFinal = pergunta || `Explique de forma curta, elegante e precisa para o cliente ${clienteNome} a etapa atual "${statusAtual}" do veículo ${veiculoNome} (${progressoAtual}% concluído). Diga o que está sendo feito agora e qual é estritamente a PRÓXIMA etapa do processo de acordo com a ordem oficial da Tiger.`;
 
+    // Instrução mestre atualizada com o fluxo cronológico exato e separado
     const systemInstruction = `Você é o assistente técnico oficial da Tiger Blindadora. 
-REGRAS OBRIGATÓRIAS DE FORMATAÇÃO E ESTILO:
-1. Seja sempre cordial, elegante e chame o cliente pelo nome logo no início.
-2. PROIBIDO ABSOLUTAMENTE usar tabelas em Markdown (como linhas com barras verticais | ou traços |---|).
-3. PROIBIDO usar símbolos excessivos como hashtags (#) ou excesso de asteriscos. Mantenha a tipografia limpa.
-4. Seja conciso e direto ao ponto: dê uma resposta curta, focada em engenharia balística, sem blocos de texto gigantescos ou listas intermináveis.
-5. Termine sempre direcionando o cliente para a nossa equipe de atendimento caso ele precise de mais detalhes.`;
+FLUXO OFICIAL E CRONOLÓGICO DA BLINDAGEM (Siga esta ordem rigorosamente, NUNCA pule ou misture etapas):
+1. Vistoria e Checklist de Entrada
+2. Desmontagem (retirada de painéis, acabamentos e preparação)
+3. Estrutura (aplicação e reforço de aços balísticos e mantas nas colunas e chassi)
+4. Portas (blindagem, reforço de dobradiças e ajustes estruturais das portas)
+5. Vidros (instalação dos vidros balísticos certificados)
+6. Acabamento (recolocação de painéis internos, forros e chicotes elétricos)
+7. Testes (testes de infiltração, funcionamento e conformidade balística)
+8. Finalização e Entrega (revisão final, limpeza técnica e entrega ao cliente)
+9. Revisões Pós-Entrega (Manutenções periódicas: 6 meses, 10.000 km ou anual)
+
+REGRAS DE FORMATAÇÃO OBRIGATÓRIAS:
+- Seja cordial e chame o cliente pelo nome.
+- NUNCA utilize tabelas em Markdown (proibido usar barras verticais |).
+- NUNCA use hashtags (#) em excesso ou símbolos poluidores.
+- Seja objetivo, técnico e elegante. Explique o que está acontecendo na etapa atual e aponte corretamente a PRÓXIMA fase de acordo com a lista oficial acima.
+- Termine direcionando para o atendimento humano se ele precisar de mais suporte.`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -50,7 +62,7 @@ REGRAS OBRIGATÓRIAS DE FORMATAÇÃO E ESTILO:
           ...(Array.isArray(historico) ? historico : []),
           { role: "user", content: textoFinal }
         ],
-        temperature: 0.3
+        temperature: 0.2
       })
     });
 
